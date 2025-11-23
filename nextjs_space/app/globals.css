@@ -1,0 +1,2131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Terminal Retro Theme - AI Terminal Style */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: 'Courier New', Monaco, Consolas, monospace;
+  background: #000000;
+  color: #0066ff;
+}
+
+/* Terminal Scrollbar Styles */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 102, 255, 0.6) rgba(0, 0, 51, 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 51, 0.3);
+  border-radius: 0;
+  border: 1px solid rgba(0, 102, 255, 0.2);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(0, 102, 255, 0.8), rgba(0, 71, 179, 0.9));
+  border-radius: 0;
+  border: 1px solid rgba(0, 102, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 102, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(0, 102, 255, 1), rgba(51, 133, 255, 1));
+  box-shadow: 0 0 15px rgba(0, 102, 255, 0.8), inset 0 0 10px rgba(0, 102, 255, 0.3);
+}
+
+@layer base {
+  :root {
+    /* Terminal Retro Theme - AI Terminal Blue */
+    --background: 0 0% 0%;                    /* Pure black */
+    --foreground: 220 100% 50%;               /* Terminal blue #0066ff */
+    --card: 220 100% 3%;                      /* Very dark blue tint */
+    --card-foreground: 220 100% 50%;
+    --popover: 220 100% 2%;
+    --popover-foreground: 220 100% 50%;
+    --primary: 220 100% 50%;                  /* Terminal blue */
+    --primary-foreground: 0 0% 0%;            /* Black text on green */
+    --secondary: 220 100% 5%;
+    --secondary-foreground: 220 100% 60%;
+    --muted: 220 100% 8%;
+    --muted-foreground: 220 100% 40%;
+    --accent: 220 100% 60%;                   /* Bright terminal blue */
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;                 /* Keep red for errors */
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 100% 20%;                   /* Blue borders */
+    --input: 220 100% 5%;
+    --ring: 220 100% 50%;
+    --radius: 0rem;                           /* Sharp corners for terminal */
+    --chart-1: 220 100% 50%;
+    --chart-2: 220 100% 60%;
+    --chart-3: 220 100% 40%;
+    --chart-4: 220 100% 70%;
+    --chart-5: 220 100% 30%;
+  }
+
+  .dark {
+    /* Terminal Dark Mode (Same as Light) */
+    --background: 0 0% 0%;
+    --foreground: 220 100% 50%;
+    --card: 220 100% 3%;
+    --card-foreground: 220 100% 50%;
+    --popover: 220 100% 2%;
+    --popover-foreground: 220 100% 50%;
+    --primary: 220 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 220 100% 5%;
+    --secondary-foreground: 220 100% 60%;
+    --muted: 220 100% 8%;
+    --muted-foreground: 220 100% 40%;
+    --accent: 220 100% 60%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 100% 20%;
+    --input: 220 100% 5%;
+    --ring: 220 100% 50%;
+    --chart-1: 220 100% 50%;
+    --chart-2: 220 100% 60%;
+    --chart-3: 220 100% 40%;
+    --chart-4: 220 100% 70%;
+    --chart-5: 220 100% 30%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    @apply dark;
+    overflow-x: hidden;
+  }
+  
+  body {
+    @apply bg-black text-foreground;
+    background: linear-gradient(135deg, #000000 0%, #0a0f0d 50%, #000000 100%);
+    background-attachment: fixed;
+    position: relative;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(at 20% 10%, rgba(51, 133, 255, 0.08) 0px, transparent 50%),
+      radial-gradient(at 80% 90%, rgba(51, 133, 255, 0.06) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(51, 133, 255, 0.04) 0px, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(rgba(51, 133, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(51, 133, 255, 0.03) 1px, transparent 1px);
+    background-size: 100px 100px;
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+/* Custom scrollbar - Green Tech Theme */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(10, 37, 32, 0.5);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(51, 133, 255, 0.6), rgba(0, 71, 179, 0.8));
+  border-radius: 4px;
+  border: 2px solid rgba(10, 37, 32, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(51, 133, 255, 0.8), rgba(0, 71, 179, 1));
+  box-shadow: 0 0 10px rgba(51, 133, 255, 0.5);
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes neonGlow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(51, 133, 255, 0.8),
+                 0 0 20px rgba(51, 133, 255, 0.6),
+                 0 0 30px rgba(51, 133, 255, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(51, 133, 255, 1),
+                 0 0 30px rgba(51, 133, 255, 0.8),
+                 0 0 40px rgba(51, 133, 255, 0.6);
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(51, 133, 255, 0.5);
+    box-shadow: 0 0 5px rgba(51, 133, 255, 0.3),
+                inset 0 0 5px rgba(51, 133, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(51, 133, 255, 0.8);
+    box-shadow: 0 0 15px rgba(51, 133, 255, 0.6),
+                inset 0 0 10px rgba(51, 133, 255, 0.2);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.5s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-neon-glow {
+  animation: neonGlow 2s ease-in-out infinite;
+}
+
+.animate-border-glow {
+  animation: borderGlow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Trading chart animations */
+.trading-pulse {
+  animation: tradingPulse 3s ease-in-out infinite;
+}
+
+@keyframes tradingPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(51, 133, 255, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(51, 133, 255, 0);
+  }
+}
+
+/* Gradient text utilities - iPOLL Green */
+.gradient-text {
+  @apply bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 bg-clip-text text-transparent;
+  filter: drop-shadow(0 0 8px rgba(51, 133, 255, 0.5));
+}
+
+.gradient-text-green {
+  @apply bg-gradient-to-r from-green-300 via-emerald-300 to-teal-300 bg-clip-text text-transparent;
+  filter: drop-shadow(0 0 6px rgba(51, 133, 255, 0.4));
+}
+
+.gradient-text-light {
+  @apply bg-gradient-to-r from-green-200 via-emerald-200 to-teal-200 bg-clip-text text-transparent;
+}
+
+.gradient-text-neon {
+  @apply bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent;
+  animation: neonGlow 2s ease-in-out infinite;
+}
+
+/* Glass morphism effect - Premium Black & Green */
+.glass {
+  @apply backdrop-blur-md border;
+  background: linear-gradient(135deg, rgba(51, 133, 255, 0.05) 0%, rgba(0, 0, 0, 0.6) 100%);
+  border-color: rgba(51, 133, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+              0 0 20px rgba(51, 133, 255, 0.1);
+}
+
+.glass-dark {
+  @apply backdrop-blur-xl border;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(10, 15, 13, 0.95) 100%);
+  border-color: rgba(51, 133, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
+              0 0 30px rgba(51, 133, 255, 0.15),
+              inset 0 0 20px rgba(51, 133, 255, 0.05);
+}
+
+.glass-card {
+  @apply backdrop-blur-xl border;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(10, 15, 13, 0.9) 50%, rgba(0, 0, 0, 0.85) 100%);
+  border-color: rgba(51, 133, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+              0 0 40px rgba(51, 133, 255, 0.12),
+              inset 0 1px 1px rgba(51, 133, 255, 0.1),
+              inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.premium-card {
+  @apply backdrop-blur-2xl border rounded-lg;
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.95) 0%, 
+    rgba(5, 8, 7, 0.98) 25%,
+    rgba(0, 0, 0, 0.95) 50%,
+    rgba(5, 8, 7, 0.98) 75%,
+    rgba(0, 0, 0, 0.95) 100%
+  );
+  border-color: rgba(51, 133, 255, 0.3);
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.7),
+    0 0 40px rgba(51, 133, 255, 0.15),
+    inset 0 1px 2px rgba(51, 133, 255, 0.15),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Neon borders */
+.neon-border {
+  border: 2px solid rgba(51, 133, 255, 0.5);
+  box-shadow: 0 0 10px rgba(51, 133, 255, 0.3),
+              inset 0 0 10px rgba(51, 133, 255, 0.1);
+}
+
+.neon-border-glow {
+  border: 2px solid rgba(51, 133, 255, 0.6);
+  animation: borderGlow 2s ease-in-out infinite;
+}
+
+/* Cyber grid background */
+.cyber-grid {
+  background-image: 
+    linear-gradient(rgba(51, 133, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(51, 133, 255, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Trading indicators - Enhanced */
+.indicator-up {
+  @apply text-green-400;
+  text-shadow: 0 0 8px rgba(51, 133, 255, 0.6);
+}
+
+.indicator-down {
+  @apply text-red-400;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.indicator-neutral {
+  @apply text-gray-400;
+}
+
+/* Tech accents */
+.tech-accent {
+  position: relative;
+}
+
+.tech-accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(51, 133, 255, 0.6), transparent);
+}
+
+.tech-accent::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(51, 133, 255, 0.6), transparent);
+}
+
+/* Glow effects */
+.glow-sm {
+  box-shadow: 0 0 10px rgba(51, 133, 255, 0.3);
+}
+
+.glow-md {
+  box-shadow: 0 0 20px rgba(51, 133, 255, 0.4);
+}
+
+.glow-lg {
+  box-shadow: 0 0 30px rgba(51, 133, 255, 0.5);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(51, 133, 255, 0.8),
+               0 0 20px rgba(51, 133, 255, 0.5);
+}
+ 
+
+/* Text overflow utilities */
+.text-ellipsis-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-ellipsis-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Prevent horizontal overflow */
+.no-overflow {
+  overflow-x: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Responsive text sizing - Terminal Theme Optimized */
+/* Global font size constraints for all pages */
+.text-xs { font-size: clamp(0.65rem, 2vw, 0.75rem) !important; }
+.text-sm { font-size: clamp(0.75rem, 2.5vw, 0.875rem) !important; }
+.text-base { font-size: clamp(0.875rem, 3vw, 1rem) !important; }
+.text-lg { font-size: clamp(1rem, 3.5vw, 1.125rem) !important; }
+.text-xl { font-size: clamp(1.125rem, 4vw, 1.25rem) !important; }
+.text-2xl { font-size: clamp(1.25rem, 4.5vw, 1.5rem) !important; }
+.text-3xl { font-size: clamp(1.5rem, 5vw, 1.875rem) !important; }
+.text-4xl { font-size: clamp(1.75rem, 5.5vw, 2.25rem) !important; }
+.text-5xl { font-size: clamp(2rem, 6vw, 3rem) !important; }
+.text-6xl { font-size: clamp(2.5rem, 7vw, 3.75rem) !important; }
+.text-7xl { font-size: clamp(3rem, 8vw, 4.5rem) !important; }
+.text-8xl { font-size: clamp(3.5rem, 9vw, 6rem) !important; }
+
+/* Tab-specific font constraints */
+[role="tabpanel"] .text-3xl,
+[role="tabpanel"] .text-4xl {
+  font-size: clamp(1.25rem, 4vw, 1.5rem) !important;
+}
+
+[role="tabpanel"] .text-5xl,
+[role="tabpanel"] .text-6xl {
+  font-size: clamp(1.5rem, 5vw, 2rem) !important;
+}
+
+/* Mobile-specific overrides */
+@media (max-width: 640px) {
+  h1 {
+    font-size: clamp(1.5rem, 6vw, 2rem) !important;
+    line-height: 1.2 !important;
+  }
+  
+  h2 {
+    font-size: clamp(1.25rem, 5vw, 1.75rem) !important;
+    line-height: 1.3 !important;
+  }
+  
+  h3 {
+    font-size: clamp(1.125rem, 4.5vw, 1.5rem) !important;
+    line-height: 1.4 !important;
+  }
+  
+  h4 {
+    font-size: clamp(1rem, 4vw, 1.25rem) !important;
+    line-height: 1.4 !important;
+  }
+  
+  p, span, div {
+    font-size: clamp(0.875rem, 3.5vw, 1rem) !important;
+    line-height: 1.6 !important;
+  }
+  
+  /* Force smaller fonts in tabs on mobile */
+  [role="tabpanel"] * {
+    font-size: clamp(0.75rem, 3vw, 0.875rem) !important;
+  }
+  
+  [role="tabpanel"] h1,
+  [role="tabpanel"] h2,
+  [role="tabpanel"] h3 {
+    font-size: clamp(1rem, 4vw, 1.25rem) !important;
+  }
+}
+
+/* Desktop constraints for tabs */
+@media (min-width: 641px) and (max-width: 1024px) {
+  [role="tabpanel"] .text-3xl,
+  [role="tabpanel"] .text-4xl,
+  [role="tabpanel"] .text-5xl {
+    font-size: clamp(1.25rem, 3vw, 1.5rem) !important;
+  }
+}
+
+/* Ensure text never overflows containers */
+* {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Tab System Optimization */
+[role="tablist"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 102, 255, 0.3) transparent;
+}
+
+[role="tablist"]::-webkit-scrollbar {
+  height: 4px;
+}
+
+[role="tablist"]::-webkit-scrollbar-track {
+  background: rgba(0, 0, 51, 0.3);
+}
+
+[role="tablist"]::-webkit-scrollbar-thumb {
+  background: rgba(0, 102, 255, 0.5);
+  border-radius: 2px;
+}
+
+/* Tab trigger styling */
+[role="tab"] {
+  white-space: nowrap;
+  font-size: clamp(0.75rem, 2.5vw, 0.875rem) !important;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 3vw, 1rem) !important;
+  flex-shrink: 0;
+}
+
+/* Tab panel content constraints */
+[role="tabpanel"] {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+}
+
+/* Card and container text constraints */
+.terminal-box,
+.terminal-box-glow,
+.ios-card,
+.ios-card-elevated,
+.glass,
+.glass-dark,
+.glass-card,
+.premium-card {
+  overflow: hidden;
+}
+
+.terminal-box *,
+.terminal-box-glow *,
+.ios-card *,
+.ios-card-elevated *,
+.glass *,
+.glass-dark *,
+.glass-card *,
+.premium-card * {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Stats and metrics text sizing */
+.stat-value {
+  font-size: clamp(1.25rem, 4vw, 1.75rem) !important;
+}
+
+.stat-label {
+  font-size: clamp(0.75rem, 2.5vw, 0.875rem) !important;
+}
+
+/* Button text constraints */
+button,
+.terminal-button,
+.ios-button {
+  font-size: clamp(0.75rem, 2.5vw, 0.875rem) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Header and title constraints for all cards */
+h1, h2, h3, h4, h5, h6 {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Flex and grid children */
+.flex > *,
+.grid > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* iOS-Style Card Components */
+.ios-card {
+  @apply rounded-2xl backdrop-blur-xl border transition-all duration-300;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(10, 15, 13, 0.9) 50%, rgba(0, 0, 0, 0.85) 100%);
+  border-color: rgba(51, 133, 255, 0.2);
+  box-shadow: 
+    0 4px 24px -1px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(51, 133, 255, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.ios-card:hover {
+  border-color: rgba(51, 133, 255, 0.3);
+  box-shadow: 
+    0 8px 32px -1px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(51, 133, 255, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.ios-card-elevated {
+  @apply rounded-2xl backdrop-blur-2xl border transition-all duration-300;
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.95) 0%, 
+    rgba(5, 8, 7, 0.98) 25%,
+    rgba(0, 0, 0, 0.95) 50%,
+    rgba(5, 8, 7, 0.98) 75%,
+    rgba(0, 0, 0, 0.95) 100%
+  );
+  border-color: rgba(51, 133, 255, 0.25);
+  box-shadow: 
+    0 20px 60px -12px rgba(0, 0, 0, 0.7),
+    0 0 40px rgba(51, 133, 255, 0.12),
+    inset 0 1px 2px rgba(255, 255, 255, 0.06),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.ios-card-elevated:hover {
+  border-color: rgba(51, 133, 255, 0.35);
+  box-shadow: 
+    0 24px 70px -12px rgba(0, 0, 0, 0.8),
+    0 0 50px rgba(51, 133, 255, 0.18),
+    inset 0 1px 2px rgba(255, 255, 255, 0.08),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.5);
+  transform: translateY(-4px);
+}
+
+/* iOS-Style Buttons */
+.ios-button {
+  @apply rounded-xl px-6 py-3 font-medium transition-all duration-300;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.ios-button:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.ios-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ios-button-primary {
+  @apply ios-button;
+  background: linear-gradient(135deg, #3385ff 0%, #0047b3 50%, #003380 100%);
+  color: #000;
+}
+
+.ios-button-primary:hover {
+  background: linear-gradient(135deg, #10ff99 0%, #20c991 50%, #069679 100%);
+  box-shadow: 0 4px 16px rgba(51, 133, 255, 0.4);
+}
+
+.ios-button-secondary {
+  @apply ios-button;
+  background: rgba(51, 133, 255, 0.1);
+  border: 1px solid rgba(51, 133, 255, 0.3);
+  color: #3385ff;
+}
+
+.ios-button-secondary:hover {
+  background: rgba(51, 133, 255, 0.15);
+  border-color: rgba(51, 133, 255, 0.4);
+}
+
+/* iOS-Style Input Fields */
+.ios-input {
+  @apply rounded-xl px-4 py-3 backdrop-blur-xl border transition-all duration-300;
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(51, 133, 255, 0.2);
+}
+
+.ios-input:focus {
+  @apply outline-none;
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(51, 133, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(51, 133, 255, 0.1);
+}
+
+/* iOS-Style Badges */
+.ios-badge {
+  @apply rounded-full px-3 py-1 text-xs font-medium backdrop-blur-xl border;
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(51, 133, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.ios-badge-success {
+  @apply ios-badge;
+  background: rgba(51, 133, 255, 0.1);
+  border-color: rgba(51, 133, 255, 0.4);
+  color: #3385ff;
+}
+
+.ios-badge-error {
+  @apply ios-badge;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.ios-badge-warning {
+  @apply ios-badge;
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+}
+
+/* iOS-Style Sections */
+.ios-section {
+  @apply px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.ios-container {
+  @apply mx-auto w-full;
+  max-width: min(1400px, calc(100vw - 2rem));
+  padding-left: clamp(1rem, 5vw, 2rem);
+  padding-right: clamp(1rem, 5vw, 2rem);
+}
+
+/* Responsive Grid - iOS Style */
+.ios-grid {
+  @apply grid gap-4 sm:gap-6 lg:gap-8;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+.ios-grid-2 {
+  @apply grid gap-4 sm:gap-6;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.ios-grid-3 {
+  @apply grid gap-4 sm:gap-6;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+.ios-grid-4 {
+  @apply grid gap-4;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+
+/* Safe Area Padding for Mobile */
+.ios-safe-area {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+/* Prevent Text Overflow - iOS Style */
+.ios-text-fit {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.ios-text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ios-text-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ios-text-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* iOS-Style Transitions */
+.ios-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ios-transition-fast {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ios-transition-slow {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile Optimization */
+@media (max-width: 768px) {
+  .ios-hide-mobile {
+    display: none !important;
+  }
+  
+  .ios-full-mobile {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .ios-stack-mobile {
+    flex-direction: column !important;
+  }
+}
+
+/* Desktop Optimization */
+@media (min-width: 769px) {
+  .ios-hide-desktop {
+    display: none !important;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+/* ========================================
+   TERMINAL RETRO EFFECTS
+   ======================================== */
+
+/* CRT Screen Effect */
+.terminal-screen {
+  position: relative;
+  background: #000000;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.terminal-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 102, 255, 0.03) 0px,
+    transparent 1px,
+    transparent 2px,
+    rgba(0, 102, 255, 0.03) 3px
+  );
+  pointer-events: none;
+  z-index: 1000;
+  animation: flicker 0.15s infinite;
+}
+
+/* Scanline Effect */
+.terminal-scanline {
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.terminal-scanline::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(0, 102, 255, 0.1) 51%,
+    transparent 52%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  animation: scan 8s linear infinite;
+}
+
+/* Terminal Text Glow */
+.terminal-glow {
+  color: #0066ff;
+  text-shadow: 
+    0 0 10px rgba(0, 102, 255, 0.8),
+    0 0 20px rgba(0, 102, 255, 0.5),
+    0 0 30px rgba(0, 102, 255, 0.3);
+  animation: terminal-glow 2s ease-in-out infinite;
+}
+
+.terminal-glow-bright {
+  color: #3385ff;
+  text-shadow: 
+    0 0 15px rgba(51, 133, 255, 1),
+    0 0 30px rgba(51, 133, 255, 0.7),
+    0 0 45px rgba(51, 133, 255, 0.5),
+    0 0 60px rgba(51, 133, 255, 0.3);
+}
+
+/* Terminal Border Glow */
+.terminal-border {
+  border: 1px solid #0066ff;
+  box-shadow: 
+    0 0 10px rgba(0, 102, 255, 0.5),
+    inset 0 0 10px rgba(0, 102, 255, 0.1);
+}
+
+.terminal-border-bright {
+  border: 2px solid #3385ff;
+  box-shadow: 
+    0 0 20px rgba(51, 133, 255, 0.8),
+    0 0 40px rgba(51, 133, 255, 0.4),
+    inset 0 0 20px rgba(51, 133, 255, 0.2);
+}
+
+/* Terminal Box */
+.terminal-box {
+  background: rgba(0, 0, 51, 0.8);
+  border: 1px solid #0066ff;
+  box-shadow: 
+    0 0 20px rgba(0, 102, 255, 0.3),
+    inset 0 0 20px rgba(0, 102, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.terminal-box-glow {
+  background: rgba(0, 0, 51, 0.9);
+  border: 2px solid #3385ff;
+  box-shadow: 
+    0 0 30px rgba(51, 133, 255, 0.5),
+    0 0 60px rgba(51, 133, 255, 0.2),
+    inset 0 0 30px rgba(51, 133, 255, 0.1);
+  animation: terminal-glow 2s ease-in-out infinite;
+}
+
+/* Terminal Button */
+.terminal-button {
+  background: rgba(0, 102, 255, 0.1);
+  border: 1px solid #0066ff;
+  color: #0066ff;
+  font-family: 'Courier New', Monaco, monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 10px rgba(0, 102, 255, 0.3),
+    inset 0 0 10px rgba(0, 102, 255, 0.05);
+}
+
+.terminal-button:hover {
+  background: rgba(0, 102, 255, 0.2);
+  border-color: #3385ff;
+  color: #3385ff;
+  box-shadow: 
+    0 0 20px rgba(51, 133, 255, 0.6),
+    0 0 40px rgba(51, 133, 255, 0.3),
+    inset 0 0 20px rgba(51, 133, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.terminal-button:active {
+  background: rgba(0, 102, 255, 0.3);
+  transform: translateY(0);
+}
+
+/* Terminal Input */
+.terminal-input {
+  background: rgba(0, 0, 51, 0.5);
+  border: 1px solid #003380;
+  color: #0066ff;
+  font-family: 'Courier New', Monaco, monospace;
+  padding: 0.75rem;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 0 10px rgba(0, 102, 255, 0.1);
+}
+
+.terminal-input:focus {
+  outline: none;
+  border-color: #0066ff;
+  box-shadow: 
+    0 0 15px rgba(0, 102, 255, 0.5),
+    inset 0 0 15px rgba(0, 102, 255, 0.15);
+}
+
+.terminal-input::placeholder {
+  color: rgba(0, 102, 255, 0.4);
+}
+
+/* Terminal Cursor Blink */
+.terminal-cursor::after {
+  content: '█';
+  animation: blink 1s step-end infinite;
+  color: #0066ff;
+  margin-left: 2px;
+}
+
+/* Flicker Effect */
+.terminal-flicker {
+  animation: flicker 4s linear infinite;
+}
+
+/* Typing Effect */
+.terminal-typing {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: type 2s steps(40, end);
+  border-right: 3px solid #0066ff;
+}
+
+/* CRT Vignette */
+.terminal-vignette {
+  position: relative;
+}
+
+.terminal-vignette::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 60%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  pointer-events: none;
+}
+
+/* Terminal Grid Background */
+.terminal-grid {
+  background-image: 
+    linear-gradient(rgba(0, 102, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 102, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Terminal Phosphor Glow */
+.terminal-phosphor {
+  color: #0066ff;
+  text-shadow: 
+    0 0 5px rgba(0, 102, 255, 1),
+    0 0 10px rgba(0, 102, 255, 0.8),
+    0 0 15px rgba(0, 102, 255, 0.6),
+    0 0 20px rgba(0, 102, 255, 0.4);
+  filter: blur(0.3px);
+}
+
+/* Terminal ASCII Art Box */
+.terminal-ascii-box {
+  border: 2px solid #0066ff;
+  border-image: repeating-linear-gradient(
+    45deg,
+    #0066ff 0,
+    #0066ff 10px,
+    transparent 10px,
+    transparent 20px
+  ) 1;
+}
+
+/* Terminal Retro Badge */
+.terminal-badge {
+  background: rgba(0, 102, 255, 0.15);
+  border: 1px solid #0066ff;
+  color: #0066ff;
+  padding: 0.25rem 0.75rem;
+  font-family: 'Courier New', Monaco, monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(0, 102, 255, 0.3);
+}
+
+/* Override rounded corners globally for terminal feel */
+* {
+  border-radius: 0 !important;
+}
+
+/* Terminal Scrollbar Override */
+::-webkit-scrollbar {
+  width: 12px;
+  background: #000000;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 51, 0.5);
+  border: 1px solid rgba(0, 102, 255, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(0, 102, 255, 0.8), rgba(0, 71, 179, 0.9));
+  border: 1px solid #0066ff;
+  box-shadow: 0 0 10px rgba(0, 102, 255, 0.5);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0066ff;
+  box-shadow: 0 0 15px rgba(51, 133, 255, 0.8);
+}
+
+/* ========================================
+   SWARM INTELLIGENCE / HIVE MIND THEME
+   ======================================== */
+
+/* Hexagonal Border Effect */
+.hexagon-border {
+  position: relative;
+  clip-path: polygon(
+    30% 0%, 70% 0%,
+    100% 30%, 100% 70%,
+    70% 100%, 30% 100%,
+    0% 70%, 0% 30%
+  );
+}
+
+.hexagon-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #00ffff, #ff00ff, #0066ff);
+  opacity: 0.3;
+  filter: blur(10px);
+  z-index: -1;
+}
+
+/* Neon Glow Effects */
+.neon-text-cyan {
+  color: #00ffff;
+  text-shadow: 
+    0 0 10px rgba(0, 255, 255, 0.8),
+    0 0 20px rgba(0, 255, 255, 0.6),
+    0 0 30px rgba(0, 255, 255, 0.4),
+    0 0 40px rgba(0, 255, 255, 0.2);
+}
+
+.neon-text-magenta {
+  color: #ff00ff;
+  text-shadow: 
+    0 0 10px rgba(255, 0, 255, 0.8),
+    0 0 20px rgba(255, 0, 255, 0.6),
+    0 0 30px rgba(255, 0, 255, 0.4),
+    0 0 40px rgba(255, 0, 255, 0.2);
+}
+
+.neon-text-pink {
+  color: #ff0080;
+  text-shadow: 
+    0 0 10px rgba(255, 0, 128, 0.8),
+    0 0 20px rgba(255, 0, 128, 0.6),
+    0 0 30px rgba(255, 0, 128, 0.4),
+    0 0 40px rgba(255, 0, 128, 0.2);
+}
+
+.neon-border-cyan {
+  border: 1px solid #00ffff;
+  box-shadow: 
+    0 0 10px rgba(0, 255, 255, 0.5),
+    0 0 20px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.neon-border-magenta {
+  border: 1px solid #ff00ff;
+  box-shadow: 
+    0 0 10px rgba(255, 0, 255, 0.5),
+    0 0 20px rgba(255, 0, 255, 0.3),
+    inset 0 0 10px rgba(255, 0, 255, 0.1);
+}
+
+.neon-border-purple {
+  border: 1px solid #8b5cf6;
+  box-shadow: 
+    0 0 10px rgba(139, 92, 246, 0.5),
+    0 0 20px rgba(139, 92, 246, 0.3),
+    inset 0 0 10px rgba(139, 92, 246, 0.1);
+}
+
+/* Neural Network Lines */
+.neural-line {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 255, 255, 0.6),
+    transparent
+  );
+  animation: data-stream 3s ease-in-out infinite;
+}
+
+/* Swarm Intelligence Card */
+.swarm-card {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.2),
+    inset 0 0 20px rgba(0, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.swarm-card:hover {
+  border-color: rgba(0, 255, 255, 0.6);
+  box-shadow: 
+    0 0 30px rgba(0, 255, 255, 0.4),
+    inset 0 0 30px rgba(0, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Hive Mind Gradient Background */
+.hive-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 17, 34, 1) 25%,
+    rgba(17, 0, 34, 1) 50%,
+    rgba(0, 17, 17, 1) 75%,
+    rgba(0, 0, 0, 1) 100%
+  );
+}
+
+/* Holographic Effect */
+.holographic {
+  background: linear-gradient(
+    45deg,
+    #00ffff 0%,
+    #ff00ff 25%,
+    #0066ff 50%,
+    #ff0080 75%,
+    #00ffff 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: holographic-shift 10s ease infinite;
+}
+
+@keyframes holographic-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Data Flow Animation */
+.data-flow {
+  position: relative;
+  overflow: hidden;
+}
+
+.data-flow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 255, 255, 0.8),
+    transparent
+  );
+  animation: data-stream 2s ease-in-out infinite;
+}
+
+/* Pulse Ring Effect */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 20px rgba(0, 255, 255, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 255, 255, 0);
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+/* Grid Pattern Overlay */
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Scanner Line Effect */
+.scanner-line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 255, 255, 0.8),
+    transparent
+  );
+  animation: scan-line 4s ease-in-out infinite;
+}
+
+@keyframes scan-line {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+/* Cyber Border */
+.cyber-border {
+  position: relative;
+  padding: 2px;
+  background: linear-gradient(45deg, #00ffff, #ff00ff, #0066ff);
+  border-radius: 8px;
+}
+
+.cyber-border > * {
+  background: #000;
+  border-radius: 6px;
+}
+
+/* Matrix Code Effect */
+@keyframes matrix-fall {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+.matrix-code {
+  animation: matrix-fall 5s linear infinite;
+}
+
+/* Swarm Particle Trails */
+.particle-trail {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: radial-gradient(circle, #00ffff 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: particle-fade 1s ease-out forwards;
+}
+
+@keyframes particle-fade {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* Hexagon Clip Path Variations */
+.hexagon-sm {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+
+.hexagon-lg {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+}
+
+/* Neon Button Variants */
+.neon-button-cyan {
+  background: transparent;
+  border: 2px solid #00ffff;
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+  box-shadow: 
+    0 0 10px rgba(0, 255, 255, 0.5),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.neon-button-cyan:hover {
+  background: rgba(0, 255, 255, 0.1);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.8),
+    inset 0 0 20px rgba(0, 255, 255, 0.2);
+  text-shadow: 0 0 15px rgba(0, 255, 255, 1);
+}
+
+.neon-button-magenta {
+  background: transparent;
+  border: 2px solid #ff00ff;
+  color: #ff00ff;
+  text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+  box-shadow: 
+    0 0 10px rgba(255, 0, 255, 0.5),
+    inset 0 0 10px rgba(255, 0, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.neon-button-magenta:hover {
+  background: rgba(255, 0, 255, 0.1);
+  box-shadow: 
+    0 0 20px rgba(255, 0, 255, 0.8),
+    inset 0 0 20px rgba(255, 0, 255, 0.2);
+  text-shadow: 0 0 15px rgba(255, 0, 255, 1);
+}
+
+/* Terminal meets Neon Hybrid */
+.hybrid-terminal-neon {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid;
+  border-image: linear-gradient(135deg, #00ffff, #0066ff, #ff00ff) 1;
+  color: #0066ff;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.3),
+    0 0 40px rgba(0, 102, 255, 0.2),
+    inset 0 0 20px rgba(0, 255, 255, 0.05);
+}
+
+/* Glow on Scroll */
+.glow-on-scroll {
+  transition: all 0.3s ease;
+}
+
+.glow-on-scroll:hover {
+  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.6))
+          drop-shadow(0 0 20px rgba(255, 0, 255, 0.4));
+}
+
+/* ============================================
+   TERMINAL ANIMATION SYSTEM
+   ============================================ */
+
+/* CRT Monitor Effects */
+@keyframes crt-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.98; }
+  55% { opacity: 0.95; }
+  60% { opacity: 1; }
+}
+
+@keyframes crt-scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes crt-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(0, 102, 255, 0.8),
+                 0 0 20px rgba(0, 102, 255, 0.5),
+                 0 0 30px rgba(0, 102, 255, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(0, 102, 255, 1),
+                 0 0 30px rgba(0, 102, 255, 0.7),
+                 0 0 45px rgba(0, 102, 255, 0.5);
+  }
+}
+
+/* Typing Cursor Animation */
+@keyframes typing-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes typing-text {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* Terminal Boot Sequence */
+@keyframes terminal-boot {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Data Stream Effect */
+@keyframes data-stream {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+/* Glitch Effect */
+@keyframes glitch-1 {
+  0%, 100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+}
+
+@keyframes glitch-2 {
+  0%, 100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(2px, -2px);
+  }
+  40% {
+    transform: translate(2px, 2px);
+  }
+  60% {
+    transform: translate(-2px, -2px);
+  }
+  80% {
+    transform: translate(-2px, 2px);
+  }
+}
+
+/* Terminal Screen Flicker */
+@keyframes terminal-flicker-fast {
+  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+    opacity: 1;
+  }
+  20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+    opacity: 0.4;
+  }
+}
+
+/* Pixel Fade In */
+@keyframes pixel-fade-in {
+  0% {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* Matrix Rain */
+@keyframes matrix-rain {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(calc(100vh + 100px));
+    opacity: 0;
+  }
+}
+
+/* Terminal Scan Effect */
+@keyframes terminal-scan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100vh;
+  }
+}
+
+/* Hologram Effect */
+@keyframes hologram {
+  0%, 100% {
+    opacity: 1;
+    transform: translateZ(0);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateZ(10px);
+  }
+}
+
+/* Terminal Glow Pulse */
+@keyframes terminal-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 102, 255, 0.3),
+                0 0 40px rgba(0, 102, 255, 0.1),
+                inset 0 0 20px rgba(0, 102, 255, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 102, 255, 0.5),
+                0 0 60px rgba(0, 102, 255, 0.2),
+                inset 0 0 30px rgba(0, 102, 255, 0.1);
+  }
+}
+
+/* ============================================
+   TERMINAL ANIMATION CLASSES
+   ============================================ */
+
+/* CRT Monitor Screen Effect */
+.terminal-crt-screen {
+  animation: crt-flicker 0.15s infinite;
+  position: relative;
+}
+
+.terminal-crt-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(0, 102, 255, 0.03) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.terminal-crt-screen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 102, 255, 0.3) 0%,
+    transparent 100%
+  );
+  animation: crt-scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Terminal Text Glow */
+.terminal-text-glow {
+  animation: crt-glow 3s ease-in-out infinite;
+  color: #0066ff;
+  font-family: 'Courier New', Monaco, Consolas, monospace;
+}
+
+/* Typing Cursor */
+.terminal-typing-cursor::after {
+  content: '█';
+  animation: typing-cursor 1s step-end infinite;
+  color: #0066ff;
+}
+
+/* Terminal Boot Animation */
+.terminal-boot-sequence {
+  animation: terminal-boot 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* Data Stream Lines */
+.terminal-data-stream {
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-data-stream::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 102, 255, 0.8) 50%,
+    transparent 100%
+  );
+  animation: data-stream 3s linear infinite;
+}
+
+/* Glitch Effect */
+.terminal-glitch {
+  position: relative;
+}
+
+.terminal-glitch::before,
+.terminal-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+}
+
+.terminal-glitch::before {
+  color: #ff00ff;
+  animation: glitch-1 0.3s infinite;
+  clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+}
+
+.terminal-glitch::after {
+  color: #00ffff;
+  animation: glitch-2 0.3s infinite;
+  clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+}
+
+/* Terminal Flicker */
+.terminal-flicker {
+  animation: terminal-flicker-fast 3s linear infinite;
+}
+
+/* Pixel Fade */
+.terminal-pixel-fade {
+  animation: pixel-fade-in 0.8s ease-out forwards;
+}
+
+/* Matrix Rain Effect */
+.terminal-matrix-rain {
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-matrix-char {
+  position: absolute;
+  color: #0066ff;
+  font-family: 'Courier New', Monaco, Consolas, monospace;
+  font-size: 14px;
+  animation: matrix-rain 5s linear infinite;
+  opacity: 0.7;
+}
+
+/* Terminal Scan Lines */
+.terminal-scanlines {
+  position: relative;
+}
+
+.terminal-scanlines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    rgba(0, 102, 255, 0.05) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+  animation: terminal-scan 10s linear infinite;
+}
+
+/* Hologram Effect */
+.terminal-hologram {
+  animation: hologram 2s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+/* Terminal Glow Border */
+.terminal-glow-border {
+  border: 1px solid #0066ff;
+  animation: terminal-glow-pulse 2s ease-in-out infinite;
+}
+
+/* Fade In Up with Terminal Style */
+.terminal-fade-in-up {
+  animation: terminal-boot 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+/* Terminal Loading Dots */
+@keyframes terminal-loading-dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+.terminal-loading::after {
+  content: '.';
+  animation: terminal-loading-dots 1.5s steps(3, end) infinite;
+}
+
+/* Terminal Pulse */
+@keyframes terminal-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.terminal-pulse {
+  animation: terminal-pulse 2s ease-in-out infinite;
+}
+
+/* Terminal Blink */
+@keyframes terminal-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.terminal-blink {
+  animation: terminal-blink 1s step-end infinite;
+}
+
+/* Terminal Slide In from Side */
+@keyframes terminal-slide-in-left {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes terminal-slide-in-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.terminal-slide-in-left {
+  animation: terminal-slide-in-left 0.5s ease-out forwards;
+}
+
+.terminal-slide-in-right {
+  animation: terminal-slide-in-right 0.5s ease-out forwards;
+}
+
+/* Terminal Card Hover */
+.terminal-card-hover {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 102, 255, 0.3);
+}
+
+.terminal-card-hover:hover {
+  border-color: #0066ff;
+  box-shadow: 0 0 20px rgba(0, 102, 255, 0.4),
+              inset 0 0 20px rgba(0, 102, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Apply CRT effect to body by default */
+body {
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    rgba(0, 102, 255, 0.02) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+
+/* ============================================
+   TERMINAL ANIMATION SYSTEM
+   ============================================ */
+
+/* CRT Monitor Effects */
+@keyframes crt-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.98; }
+  55% { opacity: 0.95; }
+  60% { opacity: 1; }
+}
+
+@keyframes crt-scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes crt-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(0, 102, 255, 0.8),
+                 0 0 20px rgba(0, 102, 255, 0.5),
+                 0 0 30px rgba(0, 102, 255, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(0, 102, 255, 1),
+                 0 0 30px rgba(0, 102, 255, 0.7),
+                 0 0 45px rgba(0, 102, 255, 0.5);
+  }
+}
+
+/* Typing Cursor Animation */
+@keyframes typing-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Terminal Boot Sequence */
+@keyframes terminal-boot {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Data Stream Effect */
+@keyframes data-stream {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+/* Glitch Effect */
+@keyframes glitch-1 {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+}
+
+@keyframes glitch-2 {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(2px, -2px); }
+  40% { transform: translate(2px, 2px); }
+  60% { transform: translate(-2px, -2px); }
+  80% { transform: translate(-2px, 2px); }
+}
+
+/* Terminal Pulse */
+@keyframes terminal-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+/* Terminal Glow Pulse */
+@keyframes terminal-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 102, 255, 0.3),
+                0 0 40px rgba(0, 102, 255, 0.1),
+                inset 0 0 20px rgba(0, 102, 255, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 102, 255, 0.5),
+                0 0 60px rgba(0, 102, 255, 0.2),
+                inset 0 0 30px rgba(0, 102, 255, 0.1);
+  }
+}
+
+/* ============================================
+   TERMINAL ANIMATION CLASSES
+   ============================================ */
+
+.terminal-crt-screen {
+  animation: crt-flicker 0.15s infinite;
+}
+
+.terminal-text-glow {
+  animation: crt-glow 3s ease-in-out infinite;
+}
+
+.terminal-boot-sequence {
+  animation: terminal-boot 0.6s ease-out forwards;
+}
+
+.terminal-pulse {
+  animation: terminal-pulse 2s ease-in-out infinite;
+}
+
+.terminal-glow-border {
+  border: 1px solid #0066ff;
+  animation: terminal-glow-pulse 2s ease-in-out infinite;
+}
+
+/* Apply scanlines to body */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    rgba(0, 102, 255, 0.02) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}

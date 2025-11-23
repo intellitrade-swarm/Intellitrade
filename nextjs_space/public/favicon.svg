@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1a2e;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#bg)"/>
+  <circle cx="128" cy="80" r="12" fill="#00d4ff" opacity="0.9"/>
+  <circle cx="80" cy="140" r="10" fill="#00d4ff" opacity="0.8"/>
+  <circle cx="176" cy="140" r="10" fill="#00d4ff" opacity="0.8"/>
+  <circle cx="128" cy="190" r="14" fill="#39ff14" opacity="0.9"/>
+  <circle cx="60" cy="100" r="8" fill="#39ff14" opacity="0.7"/>
+  <circle cx="196" cy="100" r="8" fill="#39ff14" opacity="0.7"/>
+  <line x1="128" y1="80" x2="80" y2="140" stroke="#00d4ff" stroke-width="2" opacity="0.6"/>
+  <line x1="128" y1="80" x2="176" y2="140" stroke="#00d4ff" stroke-width="2" opacity="0.6"/>
+  <line x1="80" y1="140" x2="128" y2="190" stroke="#39ff14" stroke-width="2" opacity="0.6"/>
+  <line x1="176" y1="140" x2="128" y2="190" stroke="#39ff14" stroke-width="2" opacity="0.6"/>
+  <line x1="60" y1="100" x2="80" y2="140" stroke="#00d4ff" stroke-width="1.5" opacity="0.5"/>
+  <line x1="196" y1="100" x2="176" y2="140" stroke="#00d4ff" stroke-width="1.5" opacity="0.5"/>
+  <line x1="128" y1="80" x2="60" y2="100" stroke="#39ff14" stroke-width="1.5" opacity="0.4"/>
+  <line x1="128" y1="80" x2="196" y2="100" stroke="#39ff14" stroke-width="1.5" opacity="0.4"/>
+  <polyline points="40,60 50,55 60,62 70,50 80,58 90,45" fill="none" stroke="#39ff14" stroke-width="2" opacity="0.5"/>
+  <polyline points="166,210 176,205 186,212 196,200 206,208 216,195" fill="none" stroke="#00d4ff" stroke-width="2" opacity="0.5"/>
+  <polygon points="128,30 138,50 118,50" fill="#00d4ff" opacity="0.7"/>
+  <polygon points="30,128 50,138 50,118" fill="#39ff14" opacity="0.6"/>
+  <polygon points="226,128 206,138 206,118" fill="#39ff14" opacity="0.6"/>
+  <rect x="115" y="125" width="26" height="26" fill="none" stroke="#00d4ff" stroke-width="2" opacity="0.5" transform="rotate(45 128 138)"/>
+</svg>

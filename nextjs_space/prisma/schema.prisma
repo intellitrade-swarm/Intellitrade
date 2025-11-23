@@ -1,0 +1,1123 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/ipool_swarms/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// User management and authentication
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  username      String?   @unique
+  password      String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Telegram Notifications
+  telegramUsername              String?
+  telegramChatId                String?
+  telegramNotificationsEnabled  Boolean  @default(false)
+
+  accounts         Account[]
+  sessions         Session[]
+  favoriteAgents   UserFavoriteAgent[]
+  competitions     CompetitionEntry[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// AI Agents and Trading Strategies
+model AIAgent {
+  id                    String        @id @default(cuid())
+  name                  String        @unique
+  avatar                String        // URL to agent avatar image
+  strategyType          StrategyType
+  aiProvider            AIProvider    @default(OPENAI) // AI provider for analysis
+  personality           String        // Description of agent personality
+  parameters            Json          // Strategy-specific parameters
+  isActive              Boolean       @default(true)
+  generation            Int           @default(1)
+  parentIds             String[]      // Array of parent agent IDs
+  mutationCount         Int           @default(0)
+  totalWins             Int           @default(0)
+  totalLosses           Int           @default(0)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  // Blockchain Wallet Information
+  walletAddress         String?       @unique  // Agent's blockchain wallet address (EVM)
+  encryptedPrivateKey   String?                // Encrypted private key for signing transactions (EVM)
+  primaryChain          String?       @default("base") // Primary chain: base, bsc, ethereum
+  
+  // Solana Wallet Information
+  solanaWalletAddress   String?       @unique  // Agent's Solana wallet address
+  solanaPrivateKey      String?                // Solana private key (base58 encoded)
+  
+  // BSC Wallet Information
+  bscWalletAddress      String?       @unique  // Agent's BSC wallet address
+  bscPrivateKey         String?                // BSC private key
+  
+  // Current performance metrics
+  currentBalance        Float         @default(10000.0) // Starting balance (legacy/simulated)
+  realBalance           Float         @default(0.0)     // Real crypto balance in USD value
+  totalTrades           Int           @default(0)
+  winRate               Float         @default(0)
+  totalProfitLoss       Float         @default(0)
+  sharpeRatio           Float         @default(0)
+  maxDrawdown           Float         @default(0)
+
+  trades                Trade[]
+  performances          PerformanceMetric[]
+  competitions          CompetitionEntry[]
+  evolutionEvents       EvolutionEvent[]    @relation("EvolutionTarget")
+  parentEvents          EvolutionEvent[]    @relation("EvolutionParent")
+  favorites             UserFavoriteAgent[]
+  copyTraders           CopyTrade[]
+  blockchainID          AgentBlockchainID?
+  governanceProposals   GovernanceProposal[]
+  stakings              AgentStaking[]
+  auditLogs             AgentAuditLog[]
+
+  @@index([strategyType])
+  @@index([isActive])
+  @@index([walletAddress])
+  @@index([solanaWalletAddress])
+  @@index([bscWalletAddress])
+}
+
+enum StrategyType {
+  MOMENTUM
+  MEAN_REVERSION
+  ARBITRAGE
+  SENTIMENT_ANALYSIS
+  TECHNICAL_INDICATORS
+  NEURAL_NETWORK
+  MEV_BOT
+}
+
+enum AIProvider {
+  OPENAI
+  GEMINI
+  NVIDIA
+  GROK
+}
+
+// Trading and Market Data
+model MarketData {
+  id          String   @id @default(cuid())
+  symbol      String   // BTC, ETH, etc.
+  price       Float
+  volume      Float
+  marketCap   Float?
+  priceChange Float    // 24h change
+  timestamp   DateTime @default(now())
+
+  @@index([symbol, timestamp])
+}
+
+model Trade {
+  id            String     @id @default(cuid())
+  agentId       String
+  symbol        String     // Trading pair (BTC/USDT)
+  type          TradeType
+  side          TradeSide
+  quantity      Float
+  entryPrice    Float
+  exitPrice     Float?
+  entryTime     DateTime   @default(now())
+  exitTime      DateTime?
+  profitLoss    Float?
+  status        TradeStatus @default(OPEN)
+  
+  // Strategy-specific data
+  strategy      String?    // Which strategy triggered this trade
+  confidence    Float?     // Model confidence (0-1)
+  stopLoss      Float?
+  takeProfit    Float?
+  leverage      Float?     // Leverage used for this trade
+  
+  // Blockchain transaction data
+  isRealTrade   Boolean    @default(false)  // True if executed on-chain
+  txHash        String?                     // Transaction hash if on-chain
+  blockNumber   BigInt?                     // Block number of execution
+  chain         String?                     // Chain where trade was executed
+  gasUsed       String?                     // Gas used for the transaction
+  orderID       String?                     // Exchange order ID (for AsterDEX trades)
+  
+  // Swarm trading specific
+  executionVenue String?                    // DEX venue: ASTERDEX, ONEINCH, JUPITER
+  swarmDebateId  String?                    // Link to swarm debate that generated this trade
+  usdValue       Float?                     // USD value of the trade
+  errorMessage   String?                    // Error message if trade failed
+
+  agent         AIAgent      @relation(fields: [agentId], references: [id])
+  swarmDebate   SwarmDebate? @relation(fields: [swarmDebateId], references: [id])
+
+  @@index([agentId, entryTime])
+  @@index([symbol, entryTime])
+  @@index([isRealTrade])
+  @@index([orderID])
+  @@index([swarmDebateId])
+}
+
+enum TradeType {
+  SPOT
+  LONG
+  SHORT
+  PERPETUAL
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+// Performance Tracking
+model PerformanceMetric {
+  id              String   @id @default(cuid())
+  agentId         String
+  timestamp       DateTime @default(now())
+  
+  // Core metrics
+  balance         Float
+  totalTrades     Int
+  winRate         Float
+  profitLoss      Float
+  sharpeRatio     Float
+  maxDrawdown     Float
+  
+  // Prediction accuracy metrics
+  predictionAccuracy    Float?
+  directionAccuracy     Float?
+  mae                   Float?    // Mean Absolute Error
+  rmse                  Float?    // Root Mean Square Error
+  
+  // Risk metrics
+  volatility            Float?
+  sortinoRatio          Float?
+  profitFactor          Float?
+  expectancy            Float?
+  
+  agent           AIAgent  @relation(fields: [agentId], references: [id])
+
+  @@index([agentId, timestamp])
+}
+
+// Competition System
+model Competition {
+  id            String            @id @default(cuid())
+  name          String
+  description   String
+  type          CompetitionType
+  status        CompetitionStatus @default(UPCOMING)
+  
+  startTime     DateTime
+  endTime       DateTime
+  
+  // Competition rules
+  maxParticipants       Int?
+  eliminationThreshold  Json      // Criteria for elimination
+  prizePool             Float?
+  
+  // Results
+  winnerId      String?
+  results       Json?             // Final rankings and metrics
+  
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  entries       CompetitionEntry[]
+  rounds        CompetitionRound[]
+
+  @@index([status, startTime])
+}
+
+enum CompetitionType {
+  DAILY
+  WEEKLY  
+  MONTHLY
+  TOURNAMENT
+  SURVIVAL
+}
+
+enum CompetitionStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model CompetitionEntry {
+  id            String      @id @default(cuid())
+  competitionId String
+  agentId       String
+  userId        String?     // Optional: if users can enter bots
+  
+  rank          Int?
+  isEliminated  Boolean     @default(false)
+  eliminatedAt  DateTime?
+  eliminationRound Int?
+  
+  finalScore    Float?
+  finalMetrics  Json?       // Final performance metrics
+  
+  competition   Competition @relation(fields: [competitionId], references: [id])
+  agent         AIAgent     @relation(fields: [agentId], references: [id])
+  user          User?       @relation(fields: [userId], references: [id])
+
+  @@unique([competitionId, agentId])
+  @@index([competitionId, rank])
+}
+
+model CompetitionRound {
+  id              String      @id @default(cuid())
+  competitionId   String
+  roundNumber     Int
+  name            String      // "Initial Screening", "Risk Assessment", etc.
+  
+  startTime       DateTime
+  endTime         DateTime
+  status          RoundStatus @default(UPCOMING)
+  
+  // Round criteria
+  eliminationCriteria Json
+  participantsAtStart Int?
+  participantsAtEnd   Int?
+  eliminatedAgents    String[] // Array of eliminated agent IDs
+  
+  results         Json?       // Round results and metrics
+  
+  competition     Competition @relation(fields: [competitionId], references: [id])
+
+  @@index([competitionId, roundNumber])
+}
+
+enum RoundStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+// Evolution and Genetic Algorithm System
+model EvolutionEvent {
+  id          String         @id @default(cuid())
+  type        EvolutionType
+  targetAgentId String       // Agent that was created/modified
+  parentAgentIds String[]    // Parent agents (empty for mutation)
+  
+  parameters  Json           // New parameters after evolution
+  fitness     Float?         // Fitness score that triggered evolution
+  generation  Int
+  
+  description String?        // Human readable description
+  timestamp   DateTime       @default(now())
+
+  targetAgent AIAgent        @relation("EvolutionTarget", fields: [targetAgentId], references: [id])
+  parentAgents AIAgent[]     @relation("EvolutionParent")
+
+  @@index([type, timestamp])
+  @@index([targetAgentId])
+}
+
+enum EvolutionType {
+  BREEDING      // Crossover between two agents
+  MUTATION      // Random parameter change
+  SELECTION     // Natural selection elimination
+  IMMIGRATION   // New random agent introduction
+}
+
+// User Features
+model UserFavoriteAgent {
+  id      String  @id @default(cuid())
+  userId  String
+  agentId String
+  
+  addedAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id])
+  agent   AIAgent  @relation(fields: [agentId], references: [id])
+
+  @@unique([userId, agentId])
+}
+
+// On-Chain Recording (for future blockchain integration)
+model OnChainRecord {
+  id            String            @id @default(cuid())
+  type          OnChainRecordType
+  competitionId String?
+  agentId       String?
+  
+  data          Json              // The data to be recorded
+  hash          String?           // Data hash for verification
+  blockNumber   BigInt?           // Block number when recorded
+  txHash        String?           // Transaction hash
+  
+  status        RecordStatus      @default(PENDING)
+  timestamp     DateTime          @default(now())
+  recordedAt    DateTime?
+
+  @@index([type, status])
+}
+
+enum OnChainRecordType {
+  COMPETITION_RESULT
+  AGENT_PERFORMANCE
+  ELIMINATION_RECORD
+  EVOLUTION_EVENT
+}
+
+enum RecordStatus {
+  PENDING
+  RECORDED
+  FAILED
+}
+
+// Copy Trading Feature
+model CopyTrade {
+  id              String          @id @default(cuid())
+  userWalletAddress String        // User's connected wallet address
+  agentId         String          // Agent being copied
+  
+  // Copy trading settings
+  allocationAmount Float          // Amount of funds allocated for copying
+  copyPercentage   Float          @default(100) // % of agent's position size to copy (1-100)
+  maxPositionSize  Float?         // Maximum position size per trade
+  stopLoss         Float?         // Global stop loss %
+  takeProfit       Float?         // Global take profit %
+  
+  // Status and performance
+  status          CopyTradeStatus @default(ACTIVE)
+  isActive        Boolean         @default(true)
+  totalCopiedTrades Int           @default(0)
+  totalProfit     Float           @default(0)
+  totalLoss       Float           @default(0)
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  agent           AIAgent         @relation(fields: [agentId], references: [id])
+  copiedTrades    CopyTradeTx[]
+
+  @@index([userWalletAddress])
+  @@index([agentId, status])
+  @@unique([userWalletAddress, agentId])
+}
+
+enum CopyTradeStatus {
+  ACTIVE
+  PAUSED
+  STOPPED
+}
+
+// Copy Trade Transactions
+model CopyTradeTx {
+  id              String          @id @default(cuid())
+  copyTradeId     String
+  originalTradeId String?         // Reference to agent's original trade
+  
+  // Trade details
+  symbol          String
+  side            TradeSide
+  quantity        Float
+  entryPrice      Float
+  exitPrice       Float?
+  entryTime       DateTime        @default(now())
+  exitTime        DateTime?
+  profitLoss      Float?
+  status          TradeStatus     @default(OPEN)
+  
+  // Blockchain transaction data
+  txHash          String?
+  chain           String?
+  gasUsed         String?
+  
+  copyTrade       CopyTrade       @relation(fields: [copyTradeId], references: [id])
+
+  @@index([copyTradeId, status])
+  @@index([originalTradeId])
+}
+
+// Treasury System
+model Treasury {
+  id                    String              @id @default(cuid())
+  name                  String              @default("Treasury Fund")
+  
+  // Multi-chain wallet addresses
+  evmWalletAddress      String?             @unique  // EVM chains (Base, BSC, Ethereum)
+  evmPrivateKey         String?                      // Encrypted EVM private key
+  solanaWalletAddress   String?             @unique  // Solana wallet
+  solanaPrivateKey      String?                      // Solana private key
+  
+  // Treasury balances by chain
+  baseBalance           Float               @default(0)  // Base chain balance (USDC)
+  bscBalance            Float               @default(0)  // BSC balance (USDC)
+  ethereumBalance       Float               @default(0)  // Ethereum balance (USDC)
+  solanaBalance         Float               @default(0)  // Solana balance (USDC)
+  
+  // Statistics
+  totalReceived         Float               @default(0)  // Total amount received from agents
+  totalTransactions     Int                 @default(0)  // Number of transactions
+  profitSharePercentage Float               @default(5)  // Default 5% profit share
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  transactions          TreasuryTransaction[]
+}
+
+model TreasuryTransaction {
+  id            String    @id @default(cuid())
+  treasuryId    String
+  agentId       String?   // Which agent contributed (null if external)
+  tradeId       String?   // Which trade generated this profit
+  
+  amount        Float     // Amount received
+  currency      String    @default("USDC")  // Currency type
+  chain         String    // Which chain: base, bsc, ethereum, solana
+  
+  txHash        String?   // Transaction hash if on-chain
+  blockNumber   BigInt?   // Block number
+  
+  description   String?   // Description of transaction
+  createdAt     DateTime  @default(now())
+  
+  treasury      Treasury  @relation(fields: [treasuryId], references: [id])
+  
+  @@index([treasuryId, createdAt])
+  @@index([agentId])
+  @@index([chain])
+}
+
+// Multi-Agent Swarm Trading System
+model SwarmAgent {
+  id                String              @id @default(cuid())
+  name              String              @unique
+  role              SwarmRole           // Specialized role in swarm
+  avatar            String              // Avatar URL
+  aiProvider        AIProvider          @default(OPENAI)
+  
+  // Agent characteristics
+  personality       String              // Description of personality and approach
+  expertise         String              // Area of expertise
+  votingWeight      Float               @default(1.0) // Weight in voting (0.5-2.0)
+  
+  // Performance tracking
+  totalDebates      Int                 @default(0)
+  votesCorrect      Int                 @default(0) // Votes that led to profitable trades
+  votesIncorrect    Int                 @default(0) // Votes that led to losing trades
+  accuracy          Float               @default(0) // Voting accuracy %
+  
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  messages          SwarmDebateMessage[]
+  votes             SwarmVote[]
+  
+  @@index([role, isActive])
+}
+
+enum SwarmRole {
+  RISK_ASSESSOR       // Analyzes risk/reward ratios
+  MOMENTUM_TRADER     // Identifies momentum opportunities
+  MEAN_REVERSION      // Spots oversold/overbought conditions
+  SENTIMENT_ANALYZER  // Analyzes market sentiment and social data
+  TECHNICAL_ANALYST   // Technical indicator specialist
+  FUNDAMENTAL_ANALYST // Fundamental analysis expert
+  VOLATILITY_SPECIALIST // Volatility and options expert
+}
+
+model SwarmDebate {
+  id              String              @id @default(cuid())
+  symbol          String              // Trading pair being debated
+  triggerReason   String              // What triggered this debate
+  
+  // Market data snapshot
+  currentPrice    Float
+  priceChange24h  Float
+  volume24h       Float
+  marketData      Json?               // Additional market context
+  
+  // Debate flow
+  status          DebateStatus        @default(IN_PROGRESS)
+  startedAt       DateTime            @default(now())
+  completedAt     DateTime?
+  duration        Int?                // Duration in seconds
+  
+  // Decision outcome
+  consensusReached Boolean            @default(false)
+  finalDecision   String?             // BUY, SELL, HOLD, or PASS
+  confidence      Float?              // Consensus confidence (0-100)
+  
+  // Trade execution
+  tradeExecuted   Boolean             @default(false)
+  tradeId         String?             // Reference to executed trade
+  tradeResult     String?             // WIN, LOSS, or PENDING
+  
+  messages        SwarmDebateMessage[]
+  votes           SwarmVote[]
+  decision        SwarmDecision?
+  trades          Trade[]             // Trades executed from this debate
+  
+  @@index([symbol, startedAt])
+  @@index([status])
+}
+
+enum DebateStatus {
+  IN_PROGRESS
+  VOTING
+  COMPLETED
+  CANCELLED
+}
+
+model SwarmDebateMessage {
+  id              String        @id @default(cuid())
+  debateId        String
+  agentId         String
+  
+  // Message content
+  message         String        // Agent's argument/analysis
+  sentiment       String        // BULLISH, BEARISH, NEUTRAL
+  confidence      Float         // Confidence level (0-100)
+  
+  // Analysis details
+  reasoning       Json          // Detailed reasoning and data points
+  recommendation  String        // BUY, SELL, HOLD, or PASS
+  suggestedPrice  Float?        // Suggested entry/exit price
+  suggestedSize   Float?        // Suggested position size
+  stopLoss        Float?
+  takeProfit      Float?
+  
+  timestamp       DateTime      @default(now())
+  
+  debate          SwarmDebate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  agent           SwarmAgent    @relation(fields: [agentId], references: [id])
+  
+  @@index([debateId, timestamp])
+  @@index([agentId])
+}
+
+model SwarmVote {
+  id              String        @id @default(cuid())
+  debateId        String
+  agentId         String
+  
+  // Vote details
+  decision        String        // BUY, SELL, HOLD, or PASS
+  confidence      Float         // Confidence in vote (0-100)
+  weight          Float         // Agent's voting weight at time of vote
+  
+  // Vote reasoning
+  reasoning       String?       // Summary of why agent voted this way
+  
+  timestamp       DateTime      @default(now())
+  
+  debate          SwarmDebate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  agent           SwarmAgent    @relation(fields: [agentId], references: [id])
+  
+  @@unique([debateId, agentId])
+  @@index([debateId])
+}
+
+model SwarmDecision {
+  id              String        @id @default(cuid())
+  debateId        String        @unique
+  
+  // Final decision
+  action          String        // BUY, SELL, HOLD, or PASS
+  confidence      Float         // Weighted consensus confidence (0-100)
+  
+  // Vote breakdown
+  totalVotes      Int
+  buyVotes        Int           @default(0)
+  sellVotes       Int           @default(0)
+  holdVotes       Int           @default(0)
+  passVotes       Int           @default(0)
+  
+  // Weighted scores
+  buyScore        Float         @default(0)
+  sellScore       Float         @default(0)
+  holdScore       Float         @default(0)
+  passScore       Float         @default(0)
+  
+  // Trade parameters (if action is BUY/SELL)
+  suggestedPrice  Float?
+  suggestedSize   Float?
+  stopLoss        Float?
+  takeProfit      Float?
+  leverage        Float?
+  
+  // Execution tracking
+  executed        Boolean       @default(false)
+  executedAt      DateTime?
+  tradeId         String?       // Reference to executed trade
+  
+  // Result tracking
+  resultRecorded  Boolean       @default(false)
+  profitLoss      Float?
+  outcome         String?       // WIN, LOSS, or BREAKEVEN
+  
+  createdAt       DateTime      @default(now())
+  
+  debate          SwarmDebate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  
+  @@index([createdAt])
+  @@index([action])
+}
+
+// Cross-Chain Liquidity Aggregator Models
+
+model RiskBudget {
+  id                        String   @id @default(cuid())
+  userId                    String   @unique
+  maxSlippagePercent        Float
+  maxGasUSD                 Float
+  maxExecutionTimeSeconds   Int
+  allowedChains             String[] // Array of chain names
+  allowedBridges            String[] // Array of bridge names
+  riskLevel                 String   // CONSERVATIVE, MODERATE, AGGRESSIVE
+  minLiquidityUSD           Float
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
+
+model CrossChainExecution {
+  id          String   @id @default(cuid())
+  pathId      String
+  agentId     String
+  stepType    String   // SWAP, BRIDGE, APPROVAL
+  chain       String
+  protocol    String
+  fromToken   String
+  toToken     String
+  amountIn    Float
+  amountOut   Float
+  feeUSD      Float
+  gasUSD      Float
+  slippage    Float
+  txHash      String
+  status      String   // PENDING, COMPLETED, FAILED
+  timestamp   DateTime @default(now())
+  error       String?
+  
+  @@index([pathId])
+  @@index([agentId])
+  @@index([timestamp])
+}
+
+model CrossChainRoute {
+  id                      String   @id @default(cuid())
+  fromChain               String
+  toChain                 String
+  fromToken               String
+  toToken                 String
+  amountIn                Float
+  totalCostUSD            Float
+  totalGasUSD             Float
+  estimatedSlippage       Float
+  executionTimeSeconds    Int
+  confidenceScore         Float
+  riskLevel               String
+  savingsVsCEX            Float
+  steps                   Json     // Array of execution steps
+  agentId                 String?
+  userId                  String?
+  status                  String   // PENDING, EXECUTING, COMPLETED, FAILED
+  txHashes                String[] // Array of transaction hashes
+  createdAt               DateTime @default(now())
+  completedAt             DateTime?
+  
+  @@index([agentId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Whale Monitoring & Social Sentiment Models
+
+model WhaleWallet {
+  id          String   @id @default(cuid())
+  address     String   @unique
+  label       String
+  chain       String
+  balance     Float    @default(0)
+  reputation  Float    @default(50) // 0-100
+  tracked     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([chain])
+  @@index([tracked])
+}
+
+model WhaleSignal {
+  id            String   @id @default(cuid())
+  whaleAddress  String
+  whaleLabel    String
+  action        String   // BUY, SELL, TRANSFER
+  token         String
+  amount        Float
+  amountUSD     Float
+  chain         String
+  txHash        String   @unique
+  confidence    Float
+  verified      Boolean  @default(true)
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+  
+  @@index([token])
+  @@index([timestamp])
+  @@index([confidence])
+}
+
+model SocialSentiment {
+  id                  String   @id @default(cuid())
+  platform            String   // X, REDDIT, TELEGRAM
+  symbol              String
+  sentiment           Float    // -100 to +100
+  volume              Int      // Number of mentions
+  influencerMentions  Int
+  trending            Boolean
+  timestamp           DateTime
+  createdAt           DateTime @default(now())
+  
+  @@index([symbol])
+  @@index([timestamp])
+  @@index([trending])
+}
+
+model AISignal {
+  id            String   @id @default(cuid())
+  type          String   // WHALE_MOVE, SOCIAL_BUZZ, NEWS, MULTI_SIGNAL
+  symbol        String
+  action        String   // BUY, SELL, HOLD
+  confidence    Float    // 0-100
+  urgency       String   // LOW, MEDIUM, HIGH, CRITICAL
+  positionSize  Float    // Percentage
+  timeframe     String
+  reasoning     String   @db.Text
+  sources       Json     // Whale moves, social data, news
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+  
+  @@index([symbol])
+  @@index([timestamp])
+  @@index([urgency])
+  @@index([confidence])
+}
+
+model UserSignalPreferences {
+  id                        String   @id @default(cuid())
+  userId                    String   @unique
+  enabledSignals            Json     // {whaleMoves, socialBuzz, news}
+  minimumConfidence         Float    @default(65)
+  autoAdjustPositions       Boolean  @default(false)
+  whaleShadowMode           Boolean  @default(false)
+  maxPositionSize           Float    @default(10)
+  whaleReputationThreshold  Float    @default(70)
+  allowedChains             String[]
+  allowedTokens             String[]
+  telegramAlerts            Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ============================================
+// AGENT GOVERNANCE & STAKING SYSTEM
+// ============================================
+
+model AgentBlockchainID {
+  id                String   @id @default(cuid())
+  agentId           String   @unique
+  agent             AIAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  // On-chain identity
+  contractAddress   String   @unique
+  tokenId           Int
+  chain             String   // "ethereum", "base", "polygon"
+  mintTxHash        String   @unique
+  
+  // Built-in rules
+  spendingCap       Float    // Maximum single trade amount
+  dailySpendingCap  Float    // Maximum daily spend
+  allowedStrategies String[] // Whitelisted strategies
+  requiresApproval  Boolean  @default(false) // Require governance approval for trades
+  
+  // Metadata
+  ipfsHash          String?  // Metadata stored on IPFS
+  verified          Boolean  @default(false)
+  socialRecovery    Boolean  @default(false)
+  recoveryAddresses String[] // Social recovery wallet addresses
+  
+  // Audit trail
+  totalTrades       Int      @default(0)
+  totalVolume       Float    @default(0)
+  lastAuditHash     String?  // Hash of last audit record
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([agentId])
+  @@index([contractAddress])
+  @@index([chain])
+}
+
+model GovernanceProposal {
+  id                String   @id @default(cuid())
+  
+  // Proposal details
+  title             String
+  description       String   @db.Text
+  proposalType      String   // "STRATEGY_UPDATE", "SPENDING_CAP", "AGENT_PARAMETER", "EMERGENCY_STOP"
+  
+  // Target
+  targetAgentId     String?
+  targetAgent       AIAgent? @relation(fields: [targetAgentId], references: [id], onDelete: Cascade)
+  affectsAllAgents  Boolean  @default(false)
+  
+  // Proposal data
+  proposedChanges   Json     // { parameter: value, ... }
+  currentValues     Json?    // Current state for comparison
+  
+  // Voting
+  votingStartTime   DateTime @default(now())
+  votingEndTime     DateTime
+  quorumRequired    Float    @default(10.0) // % of total staked tokens
+  passThreshold     Float    @default(66.0) // % yes votes to pass
+  
+  // Results
+  votesFor          Float    @default(0)
+  votesAgainst      Float    @default(0)
+  totalVotes        Int      @default(0)
+  quorumReached     Boolean  @default(false)
+  passed            Boolean  @default(false)
+  executed          Boolean  @default(false)
+  executionTxHash   String?
+  
+  // Metadata
+  proposer          String   // User ID or address
+  status            String   @default("ACTIVE") // "ACTIVE", "PASSED", "REJECTED", "EXECUTED", "CANCELLED"
+  
+  votes             GovernanceVote[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([targetAgentId])
+  @@index([status])
+  @@index([votingEndTime])
+}
+
+model GovernanceVote {
+  id                String             @id @default(cuid())
+  proposalId        String
+  proposal          GovernanceProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  
+  // Voter details
+  voterAddress      String
+  voterId           String             // User ID
+  
+  // Vote
+  vote              String             // "FOR", "AGAINST", "ABSTAIN"
+  votingPower       Float              // Based on staked amount
+  stakedAmount      Float              // Amount staked at time of vote
+  
+  // Metadata
+  reason            String?            @db.Text
+  txHash            String?            // On-chain transaction hash
+  
+  createdAt         DateTime           @default(now())
+  
+  @@unique([proposalId, voterAddress])
+  @@index([proposalId])
+  @@index([voterAddress])
+  @@index([voterId])
+}
+
+model AgentStaking {
+  id                String   @id @default(cuid())
+  
+  // Staker details
+  userId            String
+  userAddress       String
+  
+  // Staking details
+  agentId           String
+  agent             AIAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  stakedAmount      Float
+  stakingToken      String   @default("USDT") // Token used for staking
+  
+  // Timestamps
+  stakedAt          DateTime @default(now())
+  lockedUntil       DateTime? // Optional lock period
+  
+  // Rewards
+  totalRewardsEarned Float   @default(0)
+  lastRewardClaim   DateTime?
+  unclaimedRewards  Float    @default(0)
+  
+  // Performance tracking
+  agentPnLAtStake   Float    // Agent's PnL when stake was placed
+  agentWinRateAtStake Float  // Agent's win rate when stake was placed
+  
+  // Status
+  active            Boolean  @default(true)
+  
+  rewards           StakingReward[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([userId, agentId])
+  @@index([agentId])
+  @@index([userId])
+  @@index([userAddress])
+  @@index([active])
+}
+
+model StakingReward {
+  id                String        @id @default(cuid())
+  
+  stakingId         String
+  staking           AgentStaking  @relation(fields: [stakingId], references: [id], onDelete: Cascade)
+  
+  // Reward details
+  amount            Float
+  rewardType        String        // "PERFORMANCE", "GOVERNANCE", "BONUS"
+  
+  // Source
+  agentId           String
+  agentTrade        String?       // Trade ID that generated reward
+  agentPerformance  Float         // Agent's performance metric (win rate, PnL, etc.)
+  
+  // Distribution
+  claimed           Boolean       @default(false)
+  claimedAt         DateTime?
+  claimTxHash       String?
+  
+  // Calculation
+  stakingDuration   Int           // Days staked
+  rewardRate        Float         // APY or reward rate used
+  calculationData   Json?         // Additional calculation details
+  
+  createdAt         DateTime      @default(now())
+  
+  @@index([stakingId])
+  @@index([agentId])
+  @@index([claimed])
+}
+
+model AgentAuditLog {
+  id                String   @id @default(cuid())
+  
+  agentId           String
+  agent             AIAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  // Action details
+  actionType        String   // "TRADE", "PARAMETER_CHANGE", "GOVERNANCE_ACTION", "SPENDING_CAP_HIT"
+  actionData        Json     // Detailed action information
+  
+  // Audit trail
+  previousState     Json?    // State before action
+  newState          Json     // State after action
+  
+  // Blockchain
+  txHash            String?  // On-chain transaction hash
+  blockNumber       Int?
+  blockTimestamp    DateTime?
+  
+  // Verification
+  verified          Boolean  @default(false)
+  auditHash         String   // Hash of audit record for immutability
+  previousAuditHash String?  // Link to previous audit (blockchain-like)
+  
+  // Context
+  triggeredBy       String?  // User ID or "AUTONOMOUS"
+  governanceProposalId String? // If triggered by governance
+  
+  // Spending tracking
+  amountSpent       Float?
+  cumulativeDailySpend Float?
+  withinSpendingCap Boolean @default(true)
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([agentId])
+  @@index([actionType])
+  @@index([createdAt])
+  @@index([txHash])
+}
+
+// Webhook Event Tracking
+model WebhookEvent {
+  id              String    @id @default(cuid())
+  source          String    // 'tradingview', 'nansen', 'custom'
+  payload         Json      // Original webhook payload
+  alertType       String    // 'price', 'volume', 'whale', 'technical', 'custom'
+  symbol          String?   // Token/ticker symbol
+  processed       Boolean   @default(false)
+  swarmDecision   Json?     // Swarm/multi-agent decision result
+  processingTime  Int?      // Time taken to process in ms
+  createdAt       DateTime  @default(now())
+  processedAt     DateTime?
+  
+  @@index([source, createdAt])
+  @@index([alertType, createdAt])
+  @@index([processed])
+  @@map("webhook_events")
+}
