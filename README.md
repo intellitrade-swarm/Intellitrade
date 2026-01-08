@@ -1,4 +1,6 @@
-# 🤖 Intellitrade - AI-Powered Autonomous Trading Platform
+#  Intellitrade - AI-Powered Autonomous Trading Platform
+
+Framework powered by SwarmsAi
 
 <div align="center">
 
@@ -15,31 +17,22 @@
 
 ---
 
-## 🌟 Overview
+##  Overview
 
 Intellitrade is a cutting-edge autonomous trading platform that combines artificial intelligence, blockchain technology, and advanced on-chain analytics to execute profitable trades 24/7. The platform features:
 
-- **🤖 3 Autonomous AI Trading Agents** with distinct personalities and strategies
-- **🧠 5-Agent Swarm Intelligence** for collaborative trading decisions
-- **📊 Real-time On-Chain Analytics** powered by Nansen API
-- **🐋 Smart Money Tracking** across multiple EVM chains
-- **⚡ TradingView Webhook Integration** for automated signal processing
-- **🎯 Perpetual Futures Intelligence** with GMX/AsterDEX integration
-- **🏛️ Agent Governance & Staking** with blockchain-verified identities
-
-### 📈 Current Performance (as of Nov 22, 2025)
-
-- **Total Trades**: 52 real on-chain trades
-- **Win Rate**: 60.8%
-- **Net Profit**: $5.90 on $310 capital
-- **System Uptime**: 99.7%
-- **Average Response Time**: 3-5 seconds
-
+- ** 3 Autonomous AI Trading Agents** with distinct personalities and strategies
+- ** 5-Agent Swarm Intelligence** for collaborative trading decisions
+- ** Real-time On-Chain Analytics** powered by Nansen API
+- ** Smart Money Tracking** across multiple EVM chains
+- ** TradingView Webhook Integration** for automated signal processing
+- ** Perpetual Futures Intelligence** with GMX/AsterDEX integration
+- ** Agent Governance & Staking** with blockchain-verified identities
 ---
 
 ## ✨ Core Features
 
-### 1. 🤖 Autonomous AI Trading Agents
+### 1. Autonomous AI Trading Agents
 
 Three specialized AI agents with unique strategies:
 
@@ -54,15 +47,15 @@ Three specialized AI agents with unique strategies:
 - Circuit breaker protection (30% daily loss limit)
 - AsterDEX Perpetuals execution
 
-### 2. 🧠 Multi-Agent Swarm Intelligence
+### 2. Multi-Agent Swarm Intelligence
 
 A collaborative 5-agent system inspired by CrewAI for advanced decision-making:
 
-- **📊 Data Analyst** - Processes Nansen on-chain data and market intelligence
-- **📈 Technical Analyst** - Analyzes price action, RSI, momentum, and trends
-- **🛡️ Risk Manager** - Enforces strict risk limits and position sizing
-- **🎯 Strategy Coordinator** - Synthesizes multi-agent inputs for final decisions
-- **📋 Performance Evaluator** - Tracks decisions and builds learning memory
+- ** Data Analyst** - Processes Nansen on-chain data and market intelligence
+- **Technical Analyst** - Analyzes price action, RSI, momentum, and trends
+- **Risk Manager** - Enforces strict risk limits and position sizing
+- **Strategy Coordinator** - Synthesizes multi-agent inputs for final decisions
+- **Performance Evaluator** - Tracks decisions and builds learning memory
 
 **Benefits:**
 - 35% trade approval rate (high quality filter)
@@ -70,7 +63,7 @@ A collaborative 5-agent system inspired by CrewAI for advanced decision-making:
 - Multi-perspective analysis reduces bias
 - Cost-effective: ~$0.045 per analysis
 
-### 3. 📡 TradingView Webhook Integration
+### 3. TradingView Webhook Integration
 
 Automated trading signal processing from external sources:
 
@@ -90,7 +83,7 @@ Automated trading signal processing from external sources:
   4. Return actionable recommendation
   5. Log event for audit trail
 
-### 4. 🐋 Whale Monitor & Social Sentiment
+### 4. Whale Monitor & Social Sentiment
 
 Multi-chain EVM scanner for high-conviction tokens:
 
@@ -100,7 +93,7 @@ Multi-chain EVM scanner for high-conviction tokens:
 - **Smart Money Tracking:** Flow Intelligence, PnL Leaderboards, Profiler
 - **Top Tokens Scanner:** 5 tokens per chain with buy/sell volume analysis
 
-### 5. ⚡ Perpetual Futures Intelligence
+### 5.  Perpetual Futures Intelligence
 
 Comprehensive perps market analytics:
 
@@ -110,7 +103,7 @@ Comprehensive perps market analytics:
 - **Position Tracking:** Long/short positioning for any token
 - **Platform Support:** GMX, AsterDEX, and more
 
-### 6. 🔗 Nansen API Integration
+### 6.  Nansen API Integration
 
 25+ endpoints for institutional-grade on-chain intelligence:
 
@@ -120,7 +113,7 @@ Comprehensive perps market analytics:
 - **Profiler:** Address profiles, balances, transactions, PnL, labels
 - **TGM (Token God Mode):** Holders, perp positions/trades, leaderboards
 
-### 7. 🏛️ Agent Governance & Staking
+### 7.  Agent Governance & Staking
 
 DeFi-native governance for AI agents:
 
@@ -132,7 +125,7 @@ DeFi-native governance for AI agents:
 
 ---
 
-## 🏗️ Technical Architecture
+##  Technical Architecture
 
 ### Tech Stack
 
@@ -216,7 +209,7 @@ DeFi-native governance for AI agents:
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -325,7 +318,7 @@ AUTO_START_TRADING="true"  # Auto-start scheduler on server start
 
 ---
 
-## 🎯 Usage Examples
+## Usage Examples
 
 ### 1. Triggering Swarm Analysis
 
@@ -443,7 +436,7 @@ yarn tsx --require dotenv/config scripts/initialize-treasury.ts
 
 ---
 
-## 🔐 Security
+##  Security
 
 - **Private Keys**: Never commit private keys or API secrets
 - **Circuit Breakers**: Automatic trading halt on excessive losses
@@ -484,7 +477,7 @@ pm2 start yarn --name "intellitrade" -- start
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 We welcome contributions! Please see our contributing guidelines:
 
@@ -502,7 +495,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **Nansen** for institutional-grade on-chain analytics
 - **OpenAI** for GPT-4 Turbo AI models
@@ -513,7 +506,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📞 Support & Contact
+## Support & Contact
 
 - **Website**: [intellitrade.xyz](https://intellitrade.xyz)
 - **Documentation**: [docs.intellitrade.xyz](https://intellitrade.xyz)
@@ -521,43 +514,43 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🗺️ Roadmap
+##  Roadmap
 
-### Phase 1: Core Platform ✅ (Complete)
-- ✅ 3 autonomous AI trading agents
-- ✅ Real-time market scanning
-- ✅ AsterDEX Perpetuals integration
-- ✅ Circuit breaker risk management
+### Phase 1: Core Platform  (Complete)
+- 3 autonomous AI trading agents
+- Real-time market scanning
+- AsterDEX Perpetuals integration
+- Circuit breaker risk management
 
-### Phase 2: Intelligence Layer ✅ (Complete)
-- ✅ 5-agent swarm intelligence
-- ✅ Nansen API integration (25+ endpoints)
-- ✅ Whale monitor with multi-chain scanning
-- ✅ TradingView webhook automation
+### Phase 2: Intelligence Layer  (Complete)
+- 5-agent swarm intelligence
+-  Nansen API integration (25+ endpoints)
+-  Whale monitor with multi-chain scanning
+-  TradingView webhook automation
 
-### Phase 3: Governance & DeFi ✅ (Complete)
-- ✅ Agent blockchain IDs
-- ✅ Community governance voting
-- ✅ Performance-based staking (10-40% APY)
-- ✅ Immutable audit trails
+### Phase 3: Governance & DeFi  (Complete)
+- Agent blockchain IDs
+- Community governance voting
+- Performance-based staking (10-40% APY)
+- Immutable audit trails
 
-### Phase 4: Expansion 🚧 (In Progress)
-- 🚧 Additional AI providers (Claude, Llama 3)
-- 🚧 More DEX integrations (Jupiter, 1inch)
-- 🚧 Advanced backtesting framework
-- 🚧 Mobile app (iOS/Android)
+### Phase 4: Expansion  (In Progress)
+-  Additional AI providers (Claude, Llama 3)
+-  More DEX integrations (Jupiter, 1inch)
+-  Advanced backtesting framework
+- Mobile app (iOS/Android)
 
 ### Phase 5: Future 📅 (Planned)
-- 📅 On-chain AI agent deployment
-- 📅 Cross-chain atomic swaps
-- 📅 Decentralized oracle network
-- 📅 DAO treasury management
+- On-chain AI agent deployment
+- Cross-chain atomic swaps
+- Decentralized oracle network
+- DAO treasury management
 
 ---
 
 <div align="center">
 
-**Built with ❤️ by the Intellitrade Team**
+**Built with by the Intellitrade Team**
 
 [⭐ Star us on GitHub](https://github.com/intellitrade-swarm/intellitrade) | [🐦 Follow on Twitter](https://twitter.com/intellitrade) | [💬 Join Discord](https://discord.gg/intellitrade)
 
