@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 const aiAgents = [
   {
     name: "Momentum Master",
-    avatar: "https://cdn.abacus.ai/images/ae8cfb36-a55a-4543-97cc-86e87b579258.jpg",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=FundingPhantom",
     strategyType: StrategyType.MOMENTUM,
     personality: "A dynamic trend-following AI that capitalizes on price momentum and breaks through resistance levels. Aggressive and quick to act when trends are detected.",
     parameters: {
@@ -25,7 +25,7 @@ const aiAgents = [
   },
   {
     name: "Reversion Hunter", 
-    avatar: "https://cdn.abacus.ai/images/907f26ee-9987-4388-ba8a-bf23e6d401ea.jpg",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=VolatilitySniper",
     strategyType: StrategyType.MEAN_REVERSION,
     personality: "An analytical contrarian that identifies oversold and overbought conditions. Patient and methodical, waiting for perfect mean reversion opportunities.",
     parameters: {
@@ -44,7 +44,7 @@ const aiAgents = [
   },
   {
     name: "Arbitrage Ace",
-    avatar: "https://cdn.abacus.ai/images/e0e1f824-e4ac-4927-83f4-f31980693bf7.jpg", 
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=SentimentSage", 
     strategyType: StrategyType.ARBITRAGE,
     personality: "A precision-focused efficiency expert that exploits price discrepancies across exchanges and trading pairs. Lightning-fast execution and risk management.",
     parameters: {
@@ -61,7 +61,7 @@ const aiAgents = [
   },
   {
     name: "Sentiment Sage",
-    avatar: "https://cdn.abacus.ai/images/9a9c923a-222e-4e56-8886-50154a5c99ae.jpg",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=ArbitrageAce",
     strategyType: StrategyType.SENTIMENT_ANALYSIS, 
     personality: "A social media-savvy AI that analyzes market sentiment from news, social media, and community discussions. Intuitive and emotionally intelligent.",
     parameters: {
@@ -79,7 +79,7 @@ const aiAgents = [
   },
   {
     name: "Technical Titan",
-    avatar: "https://cdn.abacus.ai/images/a0ba0d67-3bfb-49b9-a7cd-c799d54eb532.jpg",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=MEVSentinel",
     strategyType: StrategyType.TECHNICAL_INDICATORS,
     personality: "A chart pattern specialist that combines multiple technical indicators for robust trading signals. Disciplined and systematic in approach.",
     parameters: {
@@ -99,7 +99,7 @@ const aiAgents = [
   },
   {
     name: "Neural Nova",
-    avatar: "https://cdn.abacus.ai/images/af7dfe2b-d487-455d-ae9c-8ecde0295882.jpg",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=TechnicalTitan",
     strategyType: StrategyType.NEURAL_NETWORK,
     personality: "An advanced machine learning AI using deep neural networks and reinforcement learning. Adaptive and continuously evolving through experience.",
     parameters: {
@@ -252,8 +252,8 @@ async function main() {
         strategyType: agentData.strategyType,
         personality: agentData.personality,
         parameters: agentData.parameters,
-        currentBalance: 10000.0,
-        realBalance: 100.0, // $100 real trading balance for each agent
+        currentBalance: 0, // NO FAKE MONEY - must deposit real crypto
+        realBalance: 0, // NO FAKE MONEY - must deposit real crypto to trade
         generation: 1,
         isActive: true,
         primaryChain: assignedChain, // Assign chain: 'base' or 'solana'
@@ -390,7 +390,7 @@ async function main() {
     await prisma.performanceMetric.create({
       data: {
         agentId: agent.id,
-        balance: 10000.0,
+        balance: 0, // NO FAKE MONEY - real crypto only
         totalTrades: 0,
         winRate: 0,
         profitLoss: 0,
