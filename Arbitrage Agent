@@ -1,0 +1,276 @@
+#!/usr/bin/env python3
+"""
+Arbiter – Cross-Exchange Spot Arbitrage Scanner (Monitoring Mode)
+=================================================================
+
+Monitors real-time price discrepancies across major spot markets.
+Logs potential opportunities but **does NOT execute trades** by default.
+
+For real trading you would need:
+• authenticated trading keys per exchange
+• very low-latency setup (VPS close to exchange servers)
+• proper risk & latency management
+
+Author: IntelliTrade AI Team
+Version: 2026-01 (cleaned & modernized)
+"""
+
+import asyncio
+import json
+import logging
+import os
+import time
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
+
+import aiohttp
+from enum import Enum
+
+# ──────────────────────────────────────────────── Config & Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s │ %(levelname)5s │ %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger("arbiter")
+
+# Realistic 2025–2026 taker fees (VIP0 / default)
+DEFAULT_TAKER_FEES = {
+    "binance":     0.0010,
+    "bybit":       0.0010,
+    "okx":         0.0010,
+    "kucoin":      0.0010,
+    "gate":        0.0020,
+    "mexc":        0.0020,
+    "coinbase":    0.0060,   # retail – very high
+    "kraken":      0.0026,
+}
+
+MIN_SPREAD_PCT_AFTER_FEES = 0.18      # 0.18% after round-trip fees
+MIN_PROFIT_USD = 3.0
+MAX_SCAN_SIZE_USD = 800.0
+WATCH_SYMBOLS = [
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT",
+    "USDCUSDT", "FDUSDUSDT",   # stablecoin premia sometimes interesting
+]
+
+
+@dataclass(frozen=True)
+class Ticker:
+    exchange: str
+    symbol: str
+    bid: float
+    ask: float
+    bid_qty: float
+    ask_qty: float
+    ts: float                # unix seconds
+    latency_ms: float = 0.0
+
+
+class ArbitrageScanner:
+    def __init__(self):
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.last_scan = 0.0
+        self.opportunity_count = 0
+
+    async def start(self):
+        timeout = aiohttp.ClientTimeout(total=6, connect=2)
+        self.session = aiohttp.ClientSession(timeout=timeout)
+        logger.info("Arbiter scanner started – monitoring mode only")
+
+    async def stop(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
+        logger.info("Scanner stopped")
+
+    async def fetch_binance(self, symbol: str) -> Optional[Ticker]:
+        url = f"https://api.binance.com/api/v3/ticker/bookTicker?symbol={symbol}"
+        try:
+            start = time.time()
+            async with self.session.get(url) as r:
+                if r.status != 200:
+                    return None
+                data = await r.json()
+                latency = (time.time() - start) * 1000
+                return Ticker(
+                    exchange="binance",
+                    symbol=symbol,
+                    bid=float(data["bidPrice"]),
+                    ask=float(data["askPrice"]),
+                    bid_qty=float(data["bidQty"]),
+                    ask_qty=float(data["askQty"]),
+                    ts=time.time(),
+                    latency_ms=latency
+                )
+        except Exception:
+            return None
+
+    async def fetch_bybit(self, symbol: str) -> Optional[Ticker]:
+        url = f"https://api.bybit.com/v5/market/tickers?category=spot&symbol={symbol}"
+        try:
+            start = time.time()
+            async with self.session.get(url) as r:
+                data = await r.json()
+                if not data.get("result", {}).get("list"):
+                    return None
+                t = data["result"]["list"][0]
+                latency = (time.time() - start) * 1000
+                return Ticker(
+                    "bybit", symbol,
+                    float(t["bid1Price"]), float(t["ask1Price"]),
+                    float(t["bid1Size"]), float(t["ask1Size"]),
+                    time.time(), latency
+                )
+        except Exception:
+            return None
+
+    async def fetch_okx(self, symbol: str) -> Optional[Ticker]:
+        # OKX uses DASH-USDT format
+        okx_sym = symbol.replace("USDT", "-USDT")
+        url = f"https://www.okx.com/api/v5/market/ticker?instId={okx_sym}"
+        try:
+            start = time.time()
+            async with self.session.get(url) as r:
+                data = await r.json()
+                if not data.get("data"):
+                    return None
+                t = data["data"][0]
+                latency = (time.time() - start) * 1000
+                return Ticker(
+                    "okx", symbol,
+                    float(t["bidPx"]), float(t["askPx"]),
+                    float(t["bidSz"]), float(t["askSz"]),
+                    time.time(), latency
+                )
+        except Exception:
+            return None
+
+    async def fetch_kucoin(self, symbol: str) -> Optional[Ticker]:
+        url = f"https://api.kucoin.com/api/v1/market/orderbook/level1?symbol={symbol}"
+        try:
+            start = time.time()
+            async with self.session.get(url) as r:
+                data = await r.json()
+                if data.get("code") != "200000":
+                    return None
+                t = data["data"]
+                latency = (time.time() - start) * 1000
+                return Ticker(
+                    "kucoin", symbol,
+                    float(t["bestBid"]), float(t["bestAsk"]),
+                    float(t.get("bestBidSize", 0)), float(t.get("bestAskSize", 0)),
+                    time.time(), latency
+                )
+        except Exception:
+            return None
+
+    async def collect_prices(self, symbol: str) -> List[Ticker]:
+        tasks = [
+            self.fetch_binance(symbol),
+            self.fetch_bybit(symbol),
+            self.fetch_okx(symbol),
+            self.fetch_kucoin(symbol),
+            # add more connectors later (gate, mexc, coinbase advanced, etc.)
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        valid = [r for r in results if isinstance(r, Ticker) and r.ask > 0 and r.bid > 0]
+        return valid
+
+    def evaluate_triplets(self, tickers: List[Ticker]) -> List[dict]:
+        """Find buy low → sell high combinations after fees"""
+        opps = []
+        taker_fees = {t.exchange: DEFAULT_TAKER_FEES.get(t.exchange, 0.001) for t in tickers}
+
+        for buy in tickers:
+            for sell in tickers:
+                if buy.exchange == sell.exchange:
+                    continue
+                if buy.ask >= sell.bid:
+                    continue
+
+                gross_spread_pct = (sell.bid - buy.ask) / buy.ask * 100
+                round_trip_fee_pct = (taker_fees[buy.exchange] + taker_fees[sell.exchange]) * 100
+                net_spread_pct = gross_spread_pct - round_trip_fee_pct
+
+                if net_spread_pct < MIN_SPREAD_PCT_AFTER_FEES:
+                    continue
+
+                # Very rough max size (real size limited by order book depth)
+                size_usd = min(
+                    buy.ask_qty * buy.ask,
+                    sell.bid_qty * sell.bid,
+                    MAX_SCAN_SIZE_USD
+                )
+
+                est_profit = size_usd * (net_spread_pct / 100)
+
+                if est_profit < MIN_PROFIT_USD:
+                    continue
+
+                opps.append({
+                    "symbol": buy.symbol,
+                    "buy_ex": buy.exchange,
+                    "buy_price": buy.ask,
+                    "sell_ex": sell.exchange,
+                    "sell_price": sell.bid,
+                    "net_spread_pct": net_spread_pct,
+                    "est_profit_usd": est_profit,
+                    "size_usd": size_usd,
+                    "buy_latency_ms": buy.latency_ms,
+                    "sell_latency_ms": sell.latency_ms,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+        opps.sort(key=lambda x: x["est_profit_usd"], reverse=True)
+        return opps[:3]  # top 3 only
+
+    async def scan_once(self):
+        start = time.time()
+        all_opps = []
+
+        for sym in WATCH_SYMBOLS:
+            tickers = await self.collect_prices(sym)
+            if len(tickers) < 2:
+                continue
+
+            opps = self.evaluate_triplets(tickers)
+            all_opps.extend(opps)
+
+            if opps:
+                logger.info("%s → %d opportunities", sym, len(opps))
+                for o in opps[:2]:
+                    logger.info(
+                        "  %.3f%% net | $%.2f profit | %s @ %.2f → %s @ %.2f",
+                        o["net_spread_pct"],
+                        o["est_profit_usd"],
+                        o["buy_ex"], o["buy_price"],
+                        o["sell_ex"], o["sell_price"]
+                    )
+
+        duration = time.time() - start
+        logger.info("Scan completed in %.1fs – found %d opps total", duration, len(all_opps))
+
+        self.opportunity_count += len(all_opps)
+        return all_opps
+
+    async def run(self, interval_sec: float = 6.0):
+        await self.start()
+        try:
+            while True:
+                await self.scan_once()
+                await asyncio.sleep(interval_sec)
+        except KeyboardInterrupt:
+            logger.info("Scanner stopped by user")
+        finally:
+            await self.stop()
+            logger.info("Total opportunities detected: %d", self.opportunity_count)
+
+
+async def main():
+    scanner = ArbitrageScanner()
+    await scanner.run(interval_sec=5.5)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
