@@ -1,0 +1,305 @@
+#!/usr/bin/env python3
+"""
+Flash Scalper Agent v1.1 – cleaned & partially fixed
+Uses Asterdex perpetual futures API (very Binance-like)
+"""
+
+import os
+import json
+import time
+import hmac
+import hashlib
+import logging
+from datetime import datetime
+from typing import Dict, List, Optional
+from dataclasses import dataclass, field
+from enum import Enum
+import urllib.request
+import urllib.parse
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
+
+class TradeSide(Enum):
+    LONG = "LONG"
+    SHORT = "SHORT"
+
+
+@dataclass
+class TradeSignal:
+    symbol: str
+    side: TradeSide
+    confidence: float
+    entry_price: float
+    profit_target: float
+    timestamp: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class AgentConfig:
+    min_trade_size: float = 30.0
+    max_trade_size: float = 100.0
+    max_positions: int = 6
+    leverage: int = 10
+    daily_target: float = 50.0
+    check_interval: int = 12
+    cooldown: int = 30
+    min_confidence: float = 0.78
+    symbols: List[str] = field(default_factory=lambda: ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"])
+
+
+@dataclass
+class ProfitTargets:
+    scalp: float = 2.0
+    base: float = 2.5
+    high: float = 3.5
+    ultra: float = 4.0
+
+    def get(self, conf: float) -> float:
+        if conf >= 0.95: return self.ultra
+        if conf >= 0.90: return self.high
+        if conf >= 0.85: return self.base
+        return self.scalp
+
+
+class FlashScalper:
+
+    def __init__(self):
+        self.api_key = os.getenv("ASTERDEX_API_KEY")
+        self.api_secret = os.getenv("ASTERDEX_API_SECRET")
+
+        if not self.api_key or not self.api_secret:
+            raise ValueError("Missing ASTERDEX_API_KEY or ASTERDEX_API_SECRET")
+
+        self.config = AgentConfig()
+        self.targets = ProfitTargets()
+
+        self.positions: Dict[str, Dict] = {}     # local cache (symbol → info)
+        self.daily_pnl = 0.0
+        self.last_trade = 0
+
+        logger.info("FlashScalper initialized")
+
+    def _sign(self, params: Dict) -> str:
+        query = urllib.parse.urlencode(sorted(params.items()))
+        return hmac.new(
+            self.api_secret.encode(),
+            query.encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+    def _request(self, method: str, path: str, params: Optional[Dict] = None) -> dict:
+        params = params or {}
+        params["timestamp"] = int(time.time() * 1000)
+        params["recvWindow"] = 9000
+
+        query = urllib.parse.urlencode(params)
+        sig = self._sign(params)
+        url = f"https://fapi.asterdex.com{path}?{query}&signature={sig}"
+
+        req = urllib.request.Request(url, method=method.upper())
+        req.add_header("X-ASTER-APIKEY", self.api_key)          # ← changed header
+
+        try:
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                if isinstance(data, dict) and "code" in data and data["code"] != 200:
+                    logger.error(f"API error {data.get('code')}: {data.get('msg')}")
+                    raise ValueError(data.get("msg", "API error"))
+                return data
+        except Exception as e:
+            logger.error(f"{method} {path} failed → {e}")
+            raise
+
+    def get_balance(self) -> float:
+        try:
+            res = self._request("GET", "/fapi/v2/balance")
+            for a in res:
+                if a.get("asset") == "USDT":
+                    return float(a.get("availableBalance", 0))
+            return 0.0
+        except:
+            return 0.0
+
+    def get_positions(self) -> List[Dict]:
+        try:
+            res = self._request("GET", "/fapi/v2/positionRisk")
+            return [p for p in res if float(p.get("positionAmt", 0)) != 0]
+        except:
+            return []
+
+    def get_price(self, symbol: str) -> Optional[float]:
+        try:
+            res = self._request("GET", "/fapi/v1/ticker/price", {"symbol": symbol})
+            return float(res["price"])
+        except:
+            return None
+
+    def simple_bias_and_conf(self, symbol: str) -> tuple[str, float]:
+        try:
+            klines = self._request("GET", "/fapi/v1/klines", {
+                "symbol": symbol, "interval": "5m", "limit": 24
+            })
+            if len(klines) < 12:
+                return "NEUTRAL", 0.50
+
+            closes = [float(k[4]) for k in klines]
+            ma_short = sum(closes[-6:]) / 6
+            ma_long  = sum(closes[-12:-6]) / 6
+
+            mom = (ma_short - ma_long) / ma_long
+
+            if mom > 0.004:
+                return "BULLISH", min(0.94, 0.72 + mom * 25)
+            if mom < -0.004:
+                return "BEARISH", min(0.94, 0.72 + abs(mom) * 25)
+            return "NEUTRAL", 0.50
+        except:
+            return "NEUTRAL", 0.50
+
+    def find_signal(self) -> Optional[TradeSignal]:
+        now = time.time()
+        if now - self.last_trade < self.config.cooldown:
+            return None
+
+        active_syms = {p["symbol"] for p in self.get_positions()}
+        candidates = [s for s in self.config.symbols if s not in active_syms]
+
+        best = None
+        best_conf = 0.0
+
+        for sym in candidates:
+            bias, conf = self.simple_bias_and_conf(sym)
+            if conf < self.config.min_confidence:
+                continue
+            if bias == "NEUTRAL":
+                continue
+
+            price = self.get_price(sym)
+            if not price:
+                continue
+
+            if conf > best_conf:
+                best = TradeSignal(
+                    symbol=sym,
+                    side=TradeSide.LONG if bias == "BULLISH" else TradeSide.SHORT,
+                    confidence=conf,
+                    entry_price=price,
+                    profit_target=self.targets.get(conf)
+                )
+                best_conf = conf
+
+        return best
+
+    def open_trade(self, sig: TradeSignal, avail_balance: float) -> bool:
+        size_usd = min(self.config.max_trade_size, max(self.config.min_trade_size, avail_balance * 0.12))
+        if size_usd < self.config.min_trade_size:
+            return False
+
+        notional = size_usd * self.config.leverage
+        qty = notional / sig.entry_price
+
+        # Very rough rounding – in production get from /fapi/v1/exchangeInfo
+        if "BTC" in sig.symbol:
+            qty = round(qty, 3)
+        elif "ETH" in sig.symbol:
+            qty = round(qty, 2)
+        else:
+            qty = round(qty, 1)
+
+        if qty <= 0:
+            return False
+
+        side = "BUY" if sig.side == TradeSide.LONG else "SELL"
+
+        try:
+            order = self._request("POST", "/fapi/v1/order", {
+                "symbol": sig.symbol,
+                "side": side,
+                "type": "MARKET",
+                "quantity": str(qty),           # string safer
+                "reduceOnly": "false",
+                # "positionSide": sig.side.value   # uncomment if hedge mode
+            })
+            logger.info(f"OPENED {sig.side.value} {sig.symbol}  qty={qty}  @ ~{sig.entry_price:.2f}")
+            self.last_trade = time.time()
+            return True
+        except Exception as e:
+            logger.error(f"Open failed: {e}")
+            return False
+
+    def monitor_and_close(self):
+        pos_list = self.get_positions()
+
+        for p in pos_list:
+            sym = p["symbol"]
+            amt = float(p["positionAmt"])
+            if amt == 0:
+                continue
+
+            side = "LONG" if amt > 0 else "SHORT"
+            pnl = float(p.get("unRealizedProfit", 0))
+
+            target = 2.8   # fixed for simplicity – can read from local cache later
+
+            logger.info(f"  {sym:8} {side}  PnL ${pnl:+.2f}  target ~${target:.2f}")
+
+            if pnl >= target:
+                logger.info(f"  PROFIT HIT → closing {sym}")
+                self._market_close(p)
+            elif pnl <= -35:           # emergency max drawdown per position
+                logger.warning(f"  Large loss → closing {sym}")
+                self._market_close(p)
+
+    def _market_close(self, pos: Dict):
+        sym = pos["symbol"]
+        amt = abs(float(pos["positionAmt"]))
+        side = "SELL" if float(pos["positionAmt"]) > 0 else "BUY"
+
+        try:
+            res = self._request("POST", "/fapi/v1/order", {
+                "symbol": sym,
+                "side": side,
+                "type": "MARKET",
+                "quantity": str(amt),
+                "reduceOnly": "true",               # ← very important
+                # "positionSide": "LONG" if side=="SELL" else "SHORT"
+            })
+            logger.info(f"Closed {sym} → {res.get('orderId','ok')}")
+        except Exception as e:
+            logger.error(f"Close failed {sym}: {e}")
+
+    def run_once(self):
+        logger.info("── cycle ──")
+        bal = self.get_balance()
+        poss = self.get_positions()
+
+        logger.info(f"USDT avail: ${bal:.2f}  |  positions: {len(poss)}")
+
+        self.monitor_and_close()
+
+        if len(poss) >= self.config.max_positions:
+            return
+
+        sig = self.find_signal()
+        if sig:
+            self.open_trade(sig, bal)
+
+    def run(self):
+        logger.info("Starting FlashScalper loop (Ctrl+C to stop)")
+        while True:
+            try:
+                self.run_once()
+            except Exception as e:
+                logger.exception(f"Cycle error: {e}")
+            time.sleep(self.config.check_interval)
+
+
+if __name__ == "__main__":
+    bot = FlashScalper()
+    bot.run()
