@@ -1,5 +1,8 @@
 #  Intellitrade - AI-Powered Autonomous Trading Platform
 
+$IntelliS CA Dp4Fd4Qv9xg3TwmHmDRQnv5dXQck5barfiKusg4npump
+X: https://x.com/0xintellitrade
+
 Framework powered by SwarmsAi
 
 <div align="center">
