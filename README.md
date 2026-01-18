@@ -39,15 +39,15 @@ Intellitrade is a cutting-edge autonomous trading platform that combines artific
 
 Three specialized AI agents with unique strategies:
 
-- **Volatility Sniper** ($120 capital) - Exploits market volatility with precision entries
-- **Funding Phantom** ($120 capital) - Arbitrages funding rates across perpetual markets
-- **Reversion Hunter** ($70 capital) - Identifies mean reversion opportunities
+- **Volatility Sniper** - Exploits market volatility with precision entries
+- **Funding Phantom**  - Arbitrages funding rates across perpetual markets
+- **Reversion Hunter** - Identifies mean reversion opportunities
 
 **Key Capabilities:**
 - 24/7 autonomous operation
 - Real-time market scanning every 15 minutes
 - Risk-managed position sizing (max $50 per trade)
-- Circuit breaker protection (30% daily loss limit)
+- Circuit breaker protection (5% daily loss limit)
 - AsterDEX Perpetuals execution
 
 ### 2. Multi-Agent Swarm Intelligence
@@ -506,6 +506,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Moralis** for multi-chain blockchain indexing
 - **DexScreener** for accurate DEX volume data
 - **AsterDEX** for perpetual futures execution
+- **SwarmsAI** For Hierachal Agent Framework 
 
 ---
 
