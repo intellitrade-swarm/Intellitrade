@@ -3,7 +3,7 @@
 $IntelliS CA Dp4Fd4Qv9xg3TwmHmDRQnv5dXQck5barfiKusg4npump
 X: https://x.com/0xintellitrade
 
-Framework powered by SwarmsAi
+Framework powered by SwarmsAi @swarms_corp
 
 <div align="center">
 
@@ -39,6 +39,8 @@ Intellitrade is a cutting-edge autonomous trading platform that combines artific
 
 Three specialized AI agents with unique strategies:
 
+- **Atlas** - CEO Agent
+- **Quant Agent** - Oracle Management Agent
 - **Volatility Sniper** - Exploits market volatility with precision entries
 - **Funding Phantom**  - Arbitrages funding rates across perpetual markets
 - **Reversion Hunter** - Identifies mean reversion opportunities
@@ -556,6 +558,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with by the Intellitrade Team**
 
-[⭐ Star us on GitHub](https://github.com/intellitrade-swarm/intellitrade) | [🐦 Follow on Twitter](https://twitter.com/intellitrade) | [💬 Join Discord](https://discord.gg/intellitrade)
+[⭐ Star us on GitHub](https://github.com/intellitrade-swarm/intellitrade) | [🐦 Follow on Twitter](https://twitter.com/intellitrade) |
 
 </div>
