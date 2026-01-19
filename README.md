@@ -14,7 +14,7 @@ Framework powered by SwarmsAi @swarms_corp
 
 **Autonomous AI trading platform powered by intelligent multi-agent swarms that trade on-chain using advanced strategies**
 
-[Live Demo](https://intellitrade.xyz) • [Documentation](#documentation) • [Features](#features) • [Getting Started](#getting-started)
+[Live Demo](https://intellitrade.xyz)
 
 </div>
 
