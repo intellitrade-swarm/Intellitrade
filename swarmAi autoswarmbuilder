@@ -1,0 +1,220 @@
+auto-swarm-trader/
+├── config/
+│   ├── active_strategy.json        # currently deployed strategy
+│   └── strategy_history/           # timestamped archives
+├── src/
+│   ├── __init__.py
+│   ├── auto_swarm_builder.py
+│   ├── strategies/
+│   │   ├── __init__.py
+│   │   ├── weekly_evolution.py
+│   │   ├── market_condition.py
+│   │   └── experimental.py
+│   └── utils/
+│       ├── __init__.py
+│       └── config_manager.py
+├── auto_swarm_builder.py          # CLI entry point
+├── requirements.txt
+├── README.md
+└── .gitignore
+
+Main Files1. src/auto_swarm_builder.pypython
+
+"""
+AutoSwarmBuilder - Orchestrates creation of agent teams via Swarms.AI API
+and manages strategy lifecycle for trading system.
+"""
+
+import json
+import argparse
+from datetime import datetime
+from pathlib import Path
+
+from src.strategies.weekly_evolution import weekly_strategy_evolution
+from src.strategies.market_condition import market_condition_response
+from src.strategies.experimental import experimental_architecture
+from src.utils.config_manager import save_active_strategy, archive_current_strategy
+class AutoSwarmBuilder:
+    """Main interface to generate agent team configurations using Swarms.AI"""
+
+    def __init__(self, name: str = "Trading-Strategy-Evolver"):
+        self.name = name
+        # In real implementation: initialize Swarms.AI client here
+        # self.client = SwarmsClient(api_key=...)
+
+    def run(self, task_description: str) -> dict:
+        """
+        Send task to Swarms.AI and receive generated agent team configuration.
+        
+        Returns:
+            dict: Agent team specification (agents, tools, hierarchy, prompts, etc)
+        """
+        # Placeholder – real implementation would call Swarms.AI API
+        print(f"[AutoSwarmBuilder] Generating team for task: {task_description}")
+
+        # Example structure what Swarms.AI might return
+        generated_config = {
+            "name": self.name,
+            "generated_at": datetime.utcnow().isoformat(),
+            "agents": [...],           # list of agent definitions
+            "swarm_type": "hierarchical",  # or parallel, sequential, etc
+            "objective": task_description,
+            "max_iterations": 30,
+            # ... more fields depending on actual Swarms output
+        }
+
+        return generated_config
+def main():
+    parser = argparse.ArgumentParser(description="AutoSwarm Trading Strategy Manager")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # python auto_swarm_builder.py weekly
+    weekly_parser = subparsers.add_parser("weekly", help="Run weekly strategy evolution")
+
+    # python auto_swarm_builder.py market crash
+    market_parser = subparsers.add_parser("market", help="Generate response to market condition")
+    market_parser.add_argument("condition", choices=["crash", "rally", "high-volatility", "low-volatility"])
+
+    # python auto_swarm_builder.py experiment "Name" "Hypothesis" --deploy
+    exp_parser = subparsers.add_parser("experiment", help="Test experimental architecture")
+    exp_parser.add_argument("name", help="Experiment short name")
+    exp_parser.add_argument("hypothesis", help="Short description of the hypothesis")
+    exp_parser.add_argument("--deploy", action="store_true", help="Deploy to active strategy")
+
+    # python auto_swarm_builder.py status
+    subparsers.add_parser("status", help="Show currently active strategy")
+
+    args = parser.parse_args()
+
+    builder = AutoSwarmBuilder()
+
+    if args.command == "weekly":
+        task = weekly_strategy_evolution()
+        config = builder.run(task)
+        archive_current_strategy()
+        save_active_strategy(config)
+        print("Weekly strategy evolution completed and deployed.")
+
+    elif args.command == "market":
+        task = market_condition_response(args.condition)
+        config = builder.run(task)
+        archive_current_strategy()
+        save_active_strategy(config)
+        print(f"Market condition response ({args.condition}) deployed.")
+
+    elif args.command == "experiment":
+        task = experimental_architecture(args.name, args.hypothesis)
+        config = builder.run(task)
+        if args.deploy:
+            archive_current_strategy()
+            save_active_strategy(config)
+            print(f"Experiment '{args.name}' deployed to production.")
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            path = Path(f"experiments/{timestamp}_{args.name}.json")
+            path.parent.mkdir(exist_ok=True)
+            path.write_text(json.dumps(config, indent=2))
+            print(f"Experiment saved to: {path}")
+
+    elif args.command == "status":
+        try:
+            active = json.loads(Path("config/active_strategy.json").read_text())
+            print(json.dumps(active, indent=2))
+        except FileNotFoundError:
+            print("No active strategy deployed yet.")
+if __name__ == "__main__":
+    main()
+
+2. src/utils/config_manager.pypython
+
+from datetime import datetime
+from pathlib import Path
+import json
+import shutil
+CONFIG_DIR = Path("config")
+ACTIVE_PATH = CONFIG_DIR / "active_strategy.json"
+HISTORY_DIR = CONFIG_DIR / "strategy_history"
+def archive_current_strategy() -> None:
+    """Move current active strategy to history folder with timestamp"""
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+
+    if not ACTIVE_PATH.exists():
+        return
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    dest = HISTORY_DIR / f"strategy_{timestamp}.json"
+    shutil.copy2(ACTIVE_PATH, dest)
+    print(f"Previous strategy archived → {dest.name}")
+def save_active_strategy(config: dict) -> None:
+    """Save new strategy as the active one"""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    ACTIVE_PATH.write_text(json.dumps(config, indent=2))
+    print(f"Active strategy updated → {ACTIVE_PATH}")
+
+3. Example strategy definitions (src/strategies/)python
+
+# src/strategies/weekly_evolution.py
+def weekly_strategy_evolution() -> str:
+    return """
+    You are an elite trading strategy evolution team.
+    Your task is to analyze last 7 days of performance + current market regime
+    and propose an improved agent swarm architecture for next week.
+    Focus on: risk-adjusted returns, drawdown control, regime adaptability.
+    Return a complete swarm specification.
+    """
+
+python
+
+# src/strategies/market_condition.py
+def market_condition_response(condition: str) -> str:
+    templates = {
+        "crash": "Emergency crash protection swarm. Maximize capital preservation...",
+        "rally": "Aggressive trend-following swarm optimized for strong momentum...",
+        "high-volatility": "Volatility harvesting swarm with tight risk controls...",
+        "low-volatility": "Mean-reversion + range trading swarm..."
+    }
+    return templates.get(condition, f"Adaptation for {condition} market regime")
+
+python
+
+# src/strategies/experimental.py
+def experimental_architecture(name: str, hypothesis: str) -> str:
+    return f"""
+    Experimental architecture: {name}
+    Hypothesis: {hypothesis}
+    
+    Design and return a novel agent swarm configuration to test this hypothesis.
+    Include agent roles, tools, communication pattern, termination criteria.
+    """
+
+Quick README.md excerptmarkdown
+
+# AutoSwarm Trader
+
+Autonomous trading strategy evolution using Swarms.AI agent teams.
+
+## Commands
+
+```bash
+# Weekly strategy refresh (recommended)
+python auto_swarm_builder.py weekly
+
+# Emergency / regime change response
+python auto_swarm_builder.py market crash
+python auto_swarm_builder.py market rally
+
+# Test new idea (without deploying)
+python auto_swarm_builder.py experiment "HighFreqScalp" "Faster cycles improve win rate"
+
+# Test + deploy immediately
+python auto_swarm_builder.py experiment "MeanRevV2" "Add volume filter → better entries" --deploy
+
+# See what's currently running
+python auto_swarm_builder.py status
+
+Trading Daemon (example)bash
+
+# Every 60 seconds: check if strategy changed → reload agents if needed
+while true; do python trading_daemon.py --reload-check; sleep 60; done
+
+
