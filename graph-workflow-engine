@@ -1,0 +1,676 @@
+/**
+ * Intellitrade Graph Workflow Engine
+ * SwarmsAI Graph Workflow API Integration for Complex Multi-Agent Trading
+ * 
+ * Features:
+ * - Parallel agent execution for market analysis
+ * - Sequential pipelines for trade validation
+ * - Multi-layer workflows with data collection → analysis → validation → execution
+ * 
+ * API Endpoint: POST https://api.swarms.world/v1/graph-workflow/completions
+ */
+
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+const BASE_URL = 'api.swarms.world';
+const LOG_FILE = '/home/ubuntu/intellitrade/logs/graph-workflow.log';
+
+// Ensure logs directory exists
+const logsDir = path.dirname(LOG_FILE);
+if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+
+function log(msg) {
+  const ts = new Date().toISOString();
+  const line = `[${ts}] ${msg}`;
+  console.log(line);
+  try { fs.appendFileSync(LOG_FILE, line + '\n'); } catch(e) {}
+}
+
+/**
+ * Get SwarmsAI API key
+ */
+function getApiKey() {
+  if (process.env.SWARMS_API_KEY) return process.env.SWARMS_API_KEY;
+  
+  const secretsPath = path.join(process.env.HOME, '.config/abacusai_auth_secrets.json');
+  if (fs.existsSync(secretsPath)) {
+    const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+    if (secrets.swarmsai?.secrets?.api_key?.value) {
+      return secrets.swarmsai.secrets.api_key.value;
+    }
+  }
+  
+  const envPath = '/home/ubuntu/intellitrade/nextjs_space/.env';
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const match = envContent.match(/SWARMS_API_KEY=(.+)/);
+    if (match) return match[1].trim();
+  }
+  
+  throw new Error('SWARMS_API_KEY not found');
+}
+
+/**
+ * Make Graph Workflow API request
+ */
+function executeGraphWorkflow(workflowInput, timeout = 300000) {
+  return new Promise((resolve, reject) => {
+    const apiKey = getApiKey();
+    const postData = JSON.stringify(workflowInput);
+    
+    const options = {
+      hostname: BASE_URL,
+      path: '/v1/graph-workflow/completions',
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+    
+    log(`📊 Executing Graph Workflow: ${workflowInput.name}`);
+    log(`   Agents: ${workflowInput.agents.map(a => a.agent_name).join(' → ')}`);
+    
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (res.statusCode === 200) {
+            log(`✅ Workflow complete: ${result.job_id}`);
+            log(`   Status: ${result.status}`);
+            if (result.usage) {
+              log(`   Tokens: ${result.usage.total_tokens} | Cost: $${result.usage.token_cost?.toFixed(4)}`);
+            }
+            resolve(result);
+          } else {
+            log(`❌ Workflow error: ${res.statusCode}`);
+            log(`   Response: ${data.substring(0, 200)}`);
+            reject(new Error(`API Error ${res.statusCode}: ${data}`));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+    
+    req.on('error', reject);
+    req.setTimeout(timeout, () => {
+      req.destroy();
+      reject(new Error('Graph Workflow timeout'));
+    });
+    
+    req.write(postData);
+    req.end();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRADING WORKFLOW AGENTS
+// ═══════════════════════════════════════════════════════════════
+
+const TRADING_AGENTS = {
+  // Layer 1: Data Collectors (Parallel)
+  MarketDataCollector: {
+    agent_name: 'MarketDataCollector',
+    description: 'Collects real-time market data including price, volume, and order flow',
+    system_prompt: `You are a market data specialist for crypto trading.
+Collect and structure the following data:
+- Current prices and 24h changes
+- Trading volume analysis
+- Order book depth
+- Recent large trades
+Format output as structured JSON with key metrics.`,
+    model_name: 'gpt-4.1',
+    max_tokens: 2000,
+    temperature: 0.2,
+    max_loops: 1
+  },
+  
+  SentimentCollector: {
+    agent_name: 'SentimentCollector',
+    description: 'Gathers market sentiment from Fear & Greed Index and social signals',
+    system_prompt: `You are a sentiment analysis specialist.
+Analyze and report on:
+- Fear & Greed Index interpretation
+- Market mood (extreme fear/greed implications)
+- Funding rates sentiment
+- Liquidation pressure indicators
+Provide sentiment score (1-100) and trading implications.`,
+    model_name: 'gpt-4.1',
+    max_tokens: 2000,
+    temperature: 0.3,
+    max_loops: 1
+  },
+  
+  TechnicalCollector: {
+    agent_name: 'TechnicalCollector',
+    description: 'Collects technical indicator data including MACD, RSI, and moving averages',
+    system_prompt: `You are a technical analysis data collector.
+Gather and interpret:
+- MACD signals (bullish/bearish crossovers)
+- Moving average positions (20/50/200 SMA)
+- RSI levels and divergences
+- Support/Resistance proximity
+Output structured technical signals with confidence levels.`,
+    model_name: 'gpt-4.1',
+    max_tokens: 2000,
+    temperature: 0.2,
+    max_loops: 1
+  },
+  
+  // Layer 2: Analysts (Process collected data)
+  TrendAnalyst: {
+    agent_name: 'TrendAnalyst',
+    description: 'Analyzes market trends and identifies directional bias',
+    system_prompt: `You are a trend analysis expert.
+Based on collected market data, determine:
+- Primary trend direction (BULLISH/BEARISH/NEUTRAL)
+- Trend strength (STRONG/MODERATE/WEAK)
+- Key price levels to watch
+- Potential reversal signals
+Provide confidence percentage (0-100%) for your analysis.`,
+    model_name: 'gpt-4.1',
+    max_tokens: 3000,
+    temperature: 0.3,
+    max_loops: 1
+  },
+  
+  RiskAnalyst: {
+    agent_name: 'RiskAnalyst',
+    description: 'Evaluates risk factors and position sizing',
+    system_prompt: `You are a risk management specialist.
+Analyze:
+- Current market volatility
+- Liquidation cluster risks
+- Position sizing recommendations
+- Stop-loss placement strategy
+- Risk/reward ratio assessment
+Output risk score (1-10) and maximum recommended position size.`,
+    model_name: 'gpt-4.1',
+    max_tokens: 2500,
+    temperature: 0.2,
+    max_loops: 1
+  },
+  
+  MomentumAnalyst: {
+    agent_name: 'MomentumAnalyst',
+    description: 'Analyzes price momentum and velocity',
+    system_prompt: `You are a momentum trading specialist.
+Evaluate:
+- Price velocity (rate of change)
+- Volume-price relationship
+- Momentum indicator readings
+- Acceleration/deceleration patterns
+- Entry timing optimization
+Provide momentum score and optimal entry timing.`,
+    model_name: 'gpt-4.1',
+    max_tokens: 2500,
+    temperature: 0.3,
+    max_loops: 1
+  },
+  
+  // Layer 3: Validators
+  SignalValidator: {
+    agent_name: 'SignalValidator',
+    description: 'Validates trading signals for consistency and reliability',
+    system_prompt: `You are a trading signal validator.
+Review all analyst outputs and:
+- Check for signal consistency across analysts
+- Identify conflicting signals
+- Validate confidence levels
+- Flag any anomalies or concerns
+- Assign final signal quality score (0-100)
+Output validation status: APPROVED, CAUTION, or REJECTED.`,
+    model_name: 'gpt-4.1',
+    max_tokens: 3000,
+    temperature: 0.2,
+    max_loops: 1
+  },
+  
+  DevilsAdvocate: {
+    agent_name: 'DevilsAdvocate',
+    description: 'Challenges the consensus with contrarian analysis',
+    system_prompt: `You are a contrarian analyst (Devil's Advocate).
+Your job is to challenge the majority view:
+- Find reasons why the trade could FAIL
+- Identify overlooked risks
+- Present the opposing thesis
+- Assess "crowded trade" risk
+Provide contrarian thesis strength (0-100%) and key concerns.`,
+    model_name: 'gpt-4.1',
+    max_tokens: 2500,
+    temperature: 0.4,
+    max_loops: 1
+  },
+  
+  // Layer 4: Final Decision
+  ATLASChief: {
+    agent_name: 'ATLASChief',
+    description: 'ATLAS CEO - Makes final trading decision based on all inputs',
+    system_prompt: `You are ATLAS, the CEO and final decision maker for Intellitrade.
+
+Review ALL analyst and validator outputs to make the FINAL trading decision.
+
+Your output MUST be in this EXACT format:
+BTC_DECISION: [LONG/SHORT/HOLD]
+BTC_CONFIDENCE: [0-100]
+ETH_DECISION: [LONG/SHORT/HOLD]
+ETH_CONFIDENCE: [0-100]
+RISK_LEVEL: [LOW/MEDIUM/HIGH]
+POSITION_SIZE_PCT: [1-25]
+STOP_LOSS_PCT: [0.5-5.0]
+TAKE_PROFIT_PCT: [1.0-10.0]
+REASONING: [Brief explanation of decision]
+
+Consider:
+- All analyst signals and their confidence
+- Validator approval status
+- Devil's Advocate concerns
+- Current market conditions
+- Risk/reward optimization`,
+    model_name: 'gpt-4.1',
+    max_tokens: 4000,
+    temperature: 0.3,
+    max_loops: 1
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// WORKFLOW TEMPLATES
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Full Trading Analysis Workflow
+ * 3 collectors → 3 analysts → 2 validators → 1 CEO decision
+ */
+function createFullTradingWorkflow(marketData, task) {
+  const agents = [
+    // Layer 1: Data Collectors
+    TRADING_AGENTS.MarketDataCollector,
+    TRADING_AGENTS.SentimentCollector,
+    TRADING_AGENTS.TechnicalCollector,
+    // Layer 2: Analysts
+    TRADING_AGENTS.TrendAnalyst,
+    TRADING_AGENTS.RiskAnalyst,
+    TRADING_AGENTS.MomentumAnalyst,
+    // Layer 3: Validators
+    TRADING_AGENTS.SignalValidator,
+    TRADING_AGENTS.DevilsAdvocate,
+    // Layer 4: Decision
+    TRADING_AGENTS.ATLASChief
+  ];
+  
+  const edges = [
+    // Layer 1 → Layer 2 (All collectors feed all analysts)
+    { source: 'MarketDataCollector', target: 'TrendAnalyst' },
+    { source: 'MarketDataCollector', target: 'RiskAnalyst' },
+    { source: 'MarketDataCollector', target: 'MomentumAnalyst' },
+    { source: 'SentimentCollector', target: 'TrendAnalyst' },
+    { source: 'SentimentCollector', target: 'RiskAnalyst' },
+    { source: 'SentimentCollector', target: 'MomentumAnalyst' },
+    { source: 'TechnicalCollector', target: 'TrendAnalyst' },
+    { source: 'TechnicalCollector', target: 'RiskAnalyst' },
+    { source: 'TechnicalCollector', target: 'MomentumAnalyst' },
+    // Layer 2 → Layer 3 (All analysts feed validators)
+    { source: 'TrendAnalyst', target: 'SignalValidator' },
+    { source: 'RiskAnalyst', target: 'SignalValidator' },
+    { source: 'MomentumAnalyst', target: 'SignalValidator' },
+    { source: 'TrendAnalyst', target: 'DevilsAdvocate' },
+    { source: 'RiskAnalyst', target: 'DevilsAdvocate' },
+    { source: 'MomentumAnalyst', target: 'DevilsAdvocate' },
+    // Layer 3 → Layer 4 (Validators feed CEO)
+    { source: 'SignalValidator', target: 'ATLASChief' },
+    { source: 'DevilsAdvocate', target: 'ATLASChief' }
+  ];
+  
+  const fullTask = `
+=== MARKET DATA ===
+${JSON.stringify(marketData, null, 2)}
+
+=== TRADING TASK ===
+${task || 'Analyze BTC and ETH for optimal trading positions. Provide LONG/SHORT/HOLD decisions with confidence levels.'}
+`;
+  
+  return {
+    name: 'Intellitrade-Full-Trading-Workflow',
+    description: 'Multi-layer parallel workflow for comprehensive trading analysis',
+    agents,
+    edges,
+    entry_points: ['MarketDataCollector', 'SentimentCollector', 'TechnicalCollector'],
+    end_points: ['ATLASChief'],
+    max_loops: 1,
+    task: fullTask,
+    auto_compile: true,
+    verbose: false
+  };
+}
+
+/**
+ * Quick Scalping Workflow (Faster, fewer agents)
+ * 2 collectors → 1 analyst → 1 decision
+ */
+function createScalpingWorkflow(marketData, task) {
+  const agents = [
+    TRADING_AGENTS.MarketDataCollector,
+    TRADING_AGENTS.TechnicalCollector,
+    TRADING_AGENTS.MomentumAnalyst,
+    {
+      ...TRADING_AGENTS.ATLASChief,
+      agent_name: 'ScalpDecision',
+      description: 'Quick scalping decision maker',
+      system_prompt: `You are a HFT scalping decision maker.
+Make FAST decisions based on momentum and technicals.
+
+Output format:
+DECISION: [LONG/SHORT/SKIP]
+CONFIDENCE: [0-100]
+ENTRY_NOW: [YES/NO]
+TARGET_PCT: [0.5-3.0]
+STOP_PCT: [0.3-1.5]
+REASON: [One line explanation]`
+    }
+  ];
+  
+  const edges = [
+    { source: 'MarketDataCollector', target: 'MomentumAnalyst' },
+    { source: 'TechnicalCollector', target: 'MomentumAnalyst' },
+    { source: 'MomentumAnalyst', target: 'ScalpDecision' }
+  ];
+  
+  return {
+    name: 'Intellitrade-Scalping-Workflow',
+    description: 'Fast scalping workflow for quick entries',
+    agents,
+    edges,
+    entry_points: ['MarketDataCollector', 'TechnicalCollector'],
+    end_points: ['ScalpDecision'],
+    max_loops: 1,
+    task: `SCALPING ANALYSIS:\n${JSON.stringify(marketData, null, 2)}\n\n${task || 'Quick scalp opportunity assessment for BTC/ETH'}`,
+    auto_compile: true,
+    verbose: false
+  };
+}
+
+/**
+ * Risk Assessment Workflow (For position validation)
+ */
+function createRiskWorkflow(positionData, task) {
+  const agents = [
+    TRADING_AGENTS.RiskAnalyst,
+    TRADING_AGENTS.DevilsAdvocate,
+    {
+      agent_name: 'RiskDecision',
+      description: 'Final risk assessment decision',
+      system_prompt: `You are the final risk arbiter.
+Based on risk analysis and devil's advocate concerns:
+
+Output:
+RISK_APPROVED: [YES/NO]
+RISK_SCORE: [1-10]
+MAX_POSITION_SIZE: [USD amount]
+CONCERNS: [List key risks]
+MITIGATION: [Suggested risk mitigation]`,
+      model_name: 'gpt-4.1',
+      max_tokens: 2000,
+      temperature: 0.2,
+      max_loops: 1
+    }
+  ];
+  
+  const edges = [
+    { source: 'RiskAnalyst', target: 'RiskDecision' },
+    { source: 'DevilsAdvocate', target: 'RiskDecision' }
+  ];
+  
+  return {
+    name: 'Intellitrade-Risk-Workflow',
+    description: 'Position risk assessment workflow',
+    agents,
+    edges,
+    entry_points: ['RiskAnalyst', 'DevilsAdvocate'],
+    end_points: ['RiskDecision'],
+    max_loops: 1,
+    task: `RISK ASSESSMENT:\n${JSON.stringify(positionData, null, 2)}\n\n${task || 'Evaluate risk for proposed position'}`,
+    auto_compile: true,
+    verbose: false
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Parse ATLAS decision from workflow output
+ */
+function parseATLASDecision(outputs) {
+  const atlasOutput = outputs.ATLASChief || outputs.ScalpDecision || '';
+  
+  const parseField = (text, field) => {
+    const regex = new RegExp(`${field}:\\s*([^\\n]+)`, 'i');
+    const match = text.match(regex);
+    return match ? match[1].trim() : null;
+  };
+  
+  return {
+    btc: {
+      decision: parseField(atlasOutput, 'BTC_DECISION') || 'HOLD',
+      confidence: parseInt(parseField(atlasOutput, 'BTC_CONFIDENCE')) || 50
+    },
+    eth: {
+      decision: parseField(atlasOutput, 'ETH_DECISION') || 'HOLD',
+      confidence: parseInt(parseField(atlasOutput, 'ETH_CONFIDENCE')) || 50
+    },
+    riskLevel: parseField(atlasOutput, 'RISK_LEVEL') || 'MEDIUM',
+    positionSizePct: parseFloat(parseField(atlasOutput, 'POSITION_SIZE_PCT')) || 10,
+    stopLossPct: parseFloat(parseField(atlasOutput, 'STOP_LOSS_PCT')) || 2.0,
+    takeProfitPct: parseFloat(parseField(atlasOutput, 'TAKE_PROFIT_PCT')) || 3.0,
+    reasoning: parseField(atlasOutput, 'REASONING') || 'No reasoning provided',
+    raw: atlasOutput
+  };
+}
+
+/**
+ * Get agent outputs summary
+ */
+function summarizeWorkflowOutputs(outputs) {
+  const summary = {};
+  for (const [agent, output] of Object.entries(outputs)) {
+    if (typeof output === 'string') {
+      summary[agent] = output.substring(0, 200) + (output.length > 200 ? '...' : '');
+    }
+  }
+  return summary;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN EXECUTION FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Execute full trading analysis with Graph Workflow
+ */
+async function executeFullTradingAnalysis(marketData) {
+  log('\n' + '═'.repeat(60));
+  log('🔷 GRAPH WORKFLOW: Full Trading Analysis');
+  log('═'.repeat(60));
+  
+  const workflow = createFullTradingWorkflow(marketData);
+  
+  try {
+    const result = await executeGraphWorkflow(workflow, 600000); // 10min timeout
+    
+    if (result.status === 'success') {
+      const decision = parseATLASDecision(result.outputs);
+      
+      log('\n📊 WORKFLOW RESULTS:');
+      log(`   BTC: ${decision.btc.decision} @ ${decision.btc.confidence}%`);
+      log(`   ETH: ${decision.eth.decision} @ ${decision.eth.confidence}%`);
+      log(`   Risk: ${decision.riskLevel} | Size: ${decision.positionSizePct}%`);
+      log(`   SL: ${decision.stopLossPct}% | TP: ${decision.takeProfitPct}%`);
+      log(`   Reasoning: ${decision.reasoning}`);
+      
+      return {
+        success: true,
+        decision,
+        outputs: result.outputs,
+        usage: result.usage,
+        jobId: result.job_id
+      };
+    } else {
+      throw new Error(`Workflow failed: ${result.status}`);
+    }
+  } catch (error) {
+    log(`❌ Workflow error: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Execute quick scalping analysis
+ */
+async function executeScalpingAnalysis(marketData) {
+  log('\n⚡ GRAPH WORKFLOW: Scalping Analysis');
+  
+  const workflow = createScalpingWorkflow(marketData);
+  
+  try {
+    const result = await executeGraphWorkflow(workflow, 120000); // 2min timeout
+    
+    if (result.status === 'success') {
+      const scalpOutput = result.outputs.ScalpDecision || '';
+      
+      const decision = scalpOutput.match(/DECISION:\s*(\w+)/i)?.[1] || 'SKIP';
+      const confidence = parseInt(scalpOutput.match(/CONFIDENCE:\s*(\d+)/i)?.[1]) || 50;
+      const entryNow = scalpOutput.match(/ENTRY_NOW:\s*(YES|NO)/i)?.[1] === 'YES';
+      const targetPct = parseFloat(scalpOutput.match(/TARGET_PCT:\s*([\d.]+)/i)?.[1]) || 1.5;
+      const stopPct = parseFloat(scalpOutput.match(/STOP_PCT:\s*([\d.]+)/i)?.[1]) || 0.8;
+      
+      log(`   Decision: ${decision} @ ${confidence}% | Entry: ${entryNow ? 'NOW' : 'WAIT'}`);
+      
+      return {
+        success: true,
+        decision,
+        confidence,
+        entryNow,
+        targetPct,
+        stopPct,
+        jobId: result.job_id
+      };
+    }
+  } catch (error) {
+    log(`❌ Scalp workflow error: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Execute risk assessment workflow
+ */
+async function executeRiskAssessment(positionData) {
+  log('\n🛡️ GRAPH WORKFLOW: Risk Assessment');
+  
+  const workflow = createRiskWorkflow(positionData);
+  
+  try {
+    const result = await executeGraphWorkflow(workflow, 120000);
+    
+    if (result.status === 'success') {
+      const riskOutput = result.outputs.RiskDecision || '';
+      
+      const approved = riskOutput.match(/RISK_APPROVED:\s*(YES|NO)/i)?.[1] === 'YES';
+      const riskScore = parseInt(riskOutput.match(/RISK_SCORE:\s*(\d+)/i)?.[1]) || 5;
+      const maxSize = parseFloat(riskOutput.match(/MAX_POSITION_SIZE:\s*\$?([\d.]+)/i)?.[1]) || 100;
+      
+      log(`   Approved: ${approved ? 'YES' : 'NO'} | Risk Score: ${riskScore}/10`);
+      
+      return {
+        success: true,
+        approved,
+        riskScore,
+        maxPositionSize: maxSize,
+        concerns: result.outputs.DevilsAdvocate?.substring(0, 300),
+        jobId: result.job_id
+      };
+    }
+  } catch (error) {
+    log(`❌ Risk workflow error: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════════════════════
+
+module.exports = {
+  // Core execution
+  executeGraphWorkflow,
+  
+  // Trading workflows
+  executeFullTradingAnalysis,
+  executeScalpingAnalysis,
+  executeRiskAssessment,
+  
+  // Workflow builders
+  createFullTradingWorkflow,
+  createScalpingWorkflow,
+  createRiskWorkflow,
+  
+  // Helpers
+  parseATLASDecision,
+  summarizeWorkflowOutputs,
+  
+  // Agent definitions
+  TRADING_AGENTS
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CLI EXECUTION
+// ═══════════════════════════════════════════════════════════════
+
+if (require.main === module) {
+  // Test with sample market data
+  const sampleMarketData = {
+    btc: {
+      price: 70000,
+      change24h: 2.5,
+      volume24h: 45000000000,
+      fearGreed: 25,
+      macd: 'BULLISH',
+      sma20: 68500,
+      sma50: 72000,
+      support: 65000,
+      resistance: 75000
+    },
+    eth: {
+      price: 2050,
+      change24h: 1.8,
+      volume24h: 18000000000,
+      macd: 'BULLISH',
+      sma20: 2000,
+      sma50: 2100
+    },
+    sentiment: {
+      fearGreed: 25,
+      fundingRate: 0.01,
+      longShortRatio: 0.48
+    }
+  };
+  
+  log('\n🚀 Testing Graph Workflow Engine...');
+  
+  executeFullTradingAnalysis(sampleMarketData)
+    .then(result => {
+      log('\n✅ Test complete:');
+      console.log(JSON.stringify(result, null, 2));
+    })
+    .catch(err => {
+      log(`❌ Test failed: ${err.message}`);
+    });
+}
