@@ -1,0 +1,680 @@
+/**
+ * Agent Rearrange Engine for Intellitrade
+ * Enables ATLAS CEO to dynamically reassign agent roles based on market conditions
+ * 
+ * Use Cases:
+ * - Adaptive trading strategies based on market regime
+ * - Performance optimization by shifting agent strengths
+ * - Dynamic task allocation during volatile markets
+ * - Flexible role reassignment for multi-asset analysis
+ */
+
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+const BASE_URL = 'api.swarms.world';
+const LOG_FILE = '/home/ubuntu/intellitrade/logs/agent-rearrange.log';
+
+/**
+ * Logging utility
+ */
+function log(message) {
+    const timestamp = new Date().toISOString();
+    const logLine = `[${timestamp}] ${message}`;
+    console.log(logLine);
+    try {
+        fs.appendFileSync(LOG_FILE, logLine + '\n');
+    } catch (e) {}
+}
+
+/**
+ * Get SwarmsAI API key
+ */
+function getApiKey() {
+    if (process.env.SWARMS_API_KEY) {
+        return process.env.SWARMS_API_KEY;
+    }
+    
+    const secretsPath = path.join(process.env.HOME, '.config/abacusai_auth_secrets.json');
+    if (fs.existsSync(secretsPath)) {
+        const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+        if (secrets.swarmsai?.secrets?.api_key?.value) {
+            return secrets.swarmsai.secrets.api_key.value;
+        }
+    }
+    
+    const envPath = '/home/ubuntu/intellitrade/nextjs_space/.env';
+    if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        const match = envContent.match(/SWARMS_API_KEY=(.+)/);
+        if (match) return match[1].trim();
+    }
+    
+    throw new Error('SWARMS_API_KEY not found');
+}
+
+/**
+ * Make API request to Swarms.ai
+ */
+function makeRequest(method, endpoint, data = null) {
+    return new Promise((resolve, reject) => {
+        const apiKey = getApiKey();
+        
+        const options = {
+            hostname: BASE_URL,
+            port: 443,
+            path: endpoint,
+            method: method,
+            headers: {
+                'x-api-key': apiKey,
+                'Content-Type': 'application/json'
+            },
+            timeout: 180000
+        };
+        
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                try {
+                    const result = JSON.parse(body);
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve(result);
+                    } else {
+                        reject(new Error(`API Error ${res.statusCode}: ${JSON.stringify(result)}`));
+                    }
+                } catch (e) {
+                    reject(new Error(`Parse error: ${body}`));
+                }
+            });
+        });
+        
+        req.on('error', reject);
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
+        });
+        
+        if (data) {
+            req.write(JSON.stringify(data));
+        }
+        
+        req.end();
+    });
+}
+
+/**
+ * Trading Agent Pool - All available agents for rearrangement
+ */
+const TRADING_AGENT_POOL = {
+    // Leadership Agents
+    atlasCeo: {
+        agent_name: 'ATLAS CEO',
+        description: 'Chief Executive coordinating all trading operations',
+        system_prompt: `You are ATLAS, CEO of Intellitrade's AI Trading Swarm.
+
+Your responsibilities:
+1. Coordinate all trading agents and assign roles dynamically
+2. Make final trading decisions based on agent inputs
+3. Manage risk across all positions
+4. Optimize agent performance based on market conditions
+
+You can REASSIGN agent roles mid-task based on:
+- Changing market volatility
+- New information discovery
+- Agent performance feedback
+- Risk level changes
+
+Provide: FINAL_DECISION, RISK_LEVEL, AGENT_ASSIGNMENTS`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.4,
+        skills: ['leadership', 'coordination', 'risk-management', 'decision-making']
+    },
+    
+    omegaCto: {
+        agent_name: 'OMEGA CTO',
+        description: 'Technical analysis specialist',
+        system_prompt: `You are OMEGA, CTO of Intellitrade specializing in technical analysis.
+
+Your expertise:
+1. Chart pattern recognition (head & shoulders, wedges, flags)
+2. Indicator analysis (MACD, RSI, Bollinger Bands)
+3. Support/Resistance level identification
+4. Volume profile analysis
+
+Provide: TECHNICAL_SIGNAL, KEY_LEVELS, PATTERN_DETECTED, CONFIDENCE`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.3,
+        skills: ['technical-analysis', 'charting', 'indicators', 'patterns']
+    },
+    
+    // Specialist Agents
+    sentinelSentiment: {
+        agent_name: 'SENTINEL Sentiment',
+        description: 'Market sentiment and social analysis expert',
+        system_prompt: `You are SENTINEL, Intellitrade's sentiment analysis specialist.
+
+Your focus:
+1. Fear & Greed Index interpretation
+2. Social media sentiment tracking
+3. Funding rate analysis
+4. Whale activity monitoring
+5. News impact assessment
+
+Provide: SENTIMENT_SCORE (-100 to +100), CROWD_POSITION, CONTRARIAN_SIGNAL`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.3,
+        skills: ['sentiment', 'social-analysis', 'crowd-psychology', 'news']
+    },
+    
+    titanScalper: {
+        agent_name: 'TITAN Scalper',
+        description: 'High-frequency scalping specialist',
+        system_prompt: `You are TITAN, Intellitrade's elite scalping agent.
+
+Your specialty:
+1. 1-minute to 15-minute timeframe analysis
+2. Quick entry/exit timing
+3. Spread and slippage optimization
+4. Momentum burst detection
+
+Provide: SCALP_SIGNAL, ENTRY_PRICE, EXIT_TARGET, TIME_WINDOW`,
+        model_name: 'gpt-4o-mini',
+        max_loops: 1,
+        temperature: 0.5,
+        skills: ['scalping', 'timing', 'momentum', 'hft']
+    },
+    
+    hydraRisk: {
+        agent_name: 'HYDRA Risk Manager',
+        description: 'Risk assessment and position sizing expert',
+        system_prompt: `You are HYDRA, Intellitrade's risk management guardian.
+
+Your mandate:
+1. Position size calculation (max 2% risk per trade)
+2. Stop-loss placement optimization
+3. Portfolio correlation analysis
+4. Drawdown monitoring
+5. VETO power on high-risk trades (>7/10)
+
+Provide: RISK_SCORE (1-10), POSITION_SIZE, STOP_LOSS, VETO (yes/no)`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.2,
+        skills: ['risk-management', 'position-sizing', 'drawdown', 'correlation']
+    },
+    
+    oracleMacro: {
+        agent_name: 'ORACLE Macro',
+        description: 'Macroeconomic and on-chain analysis',
+        system_prompt: `You are ORACLE, Intellitrade's macro and on-chain analyst.
+
+Your domain:
+1. Federal Reserve policy impact
+2. Dollar strength (DXY) correlation
+3. On-chain metrics (MVRV, NUPL, exchange flows)
+4. Institutional positioning
+5. ETF flow analysis
+
+Provide: MACRO_BIAS, ON_CHAIN_SIGNAL, TIMEFRAME, KEY_LEVELS`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.3,
+        skills: ['macro', 'on-chain', 'institutional', 'etf']
+    },
+    
+    nexusLiquidation: {
+        agent_name: 'NEXUS Liquidation',
+        description: 'Liquidation heatmap and leverage analysis',
+        system_prompt: `You are NEXUS, Intellitrade's liquidation specialist.
+
+Your expertise:
+1. Liquidation heatmap interpretation
+2. Leverage distribution analysis
+3. Squeeze detection (long/short)
+4. Funding rate arbitrage
+5. Open interest divergence
+
+Provide: LIQUIDATION_SIGNAL, SQUEEZE_POTENTIAL, TARGET_LEVELS, CONFIDENCE`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.3,
+        skills: ['liquidations', 'leverage', 'funding', 'open-interest']
+    },
+    
+    phoenixRecovery: {
+        agent_name: 'PHOENIX Recovery',
+        description: 'Loss recovery and position management specialist',
+        system_prompt: `You are PHOENIX, Intellitrade's recovery specialist.
+
+Your focus:
+1. Underwater position management
+2. Averaging strategies (DCA timing)
+3. Hedging recommendations
+4. Exit optimization for losing trades
+5. Drawdown recovery planning
+
+Provide: RECOVERY_STRATEGY, HEDGE_RECOMMENDATION, DCA_LEVELS, EXIT_PLAN`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.4,
+        skills: ['recovery', 'hedging', 'dca', 'exit-management']
+    },
+    
+    specterArbitrage: {
+        agent_name: 'SPECTER Arbitrage',
+        description: 'Cross-exchange and funding arbitrage specialist',
+        system_prompt: `You are SPECTER, Intellitrade's arbitrage hunter.
+
+Your specialty:
+1. Cross-exchange price discrepancies
+2. Funding rate arbitrage opportunities
+3. Basis trade identification
+4. DEX/CEX spread analysis
+5. Flash loan opportunities
+
+Provide: ARB_OPPORTUNITY, SPREAD, EXECUTION_PATH, EXPECTED_PROFIT`,
+        model_name: 'gpt-4o-mini',
+        max_loops: 1,
+        temperature: 0.3,
+        skills: ['arbitrage', 'spreads', 'funding-arb', 'cross-exchange']
+    }
+};
+
+/**
+ * Market Regime Definitions for Agent Assignment
+ */
+const MARKET_REGIMES = {
+    TRENDING_BULL: {
+        description: 'Strong uptrend with momentum',
+        primaryAgents: ['atlasCeo', 'omegaCto', 'titanScalper', 'oracleMacro'],
+        supportAgents: ['sentinelSentiment', 'hydraRisk']
+    },
+    TRENDING_BEAR: {
+        description: 'Strong downtrend with momentum',
+        primaryAgents: ['atlasCeo', 'omegaCto', 'hydraRisk', 'phoenixRecovery'],
+        supportAgents: ['nexusLiquidation', 'sentinelSentiment']
+    },
+    RANGING: {
+        description: 'Sideways market with defined range',
+        primaryAgents: ['atlasCeo', 'titanScalper', 'specterArbitrage', 'nexusLiquidation'],
+        supportAgents: ['omegaCto', 'hydraRisk']
+    },
+    HIGH_VOLATILITY: {
+        description: 'Extreme volatility with rapid price swings',
+        primaryAgents: ['atlasCeo', 'hydraRisk', 'nexusLiquidation', 'titanScalper'],
+        supportAgents: ['phoenixRecovery', 'sentinelSentiment']
+    },
+    LOW_VOLATILITY: {
+        description: 'Compressed volatility, potential breakout',
+        primaryAgents: ['atlasCeo', 'omegaCto', 'specterArbitrage', 'oracleMacro'],
+        supportAgents: ['sentinelSentiment', 'hydraRisk']
+    },
+    SQUEEZE_POTENTIAL: {
+        description: 'High liquidation imbalance, squeeze likely',
+        primaryAgents: ['atlasCeo', 'nexusLiquidation', 'titanScalper', 'hydraRisk'],
+        supportAgents: ['omegaCto', 'sentinelSentiment']
+    }
+};
+
+/**
+ * Detect current market regime from data
+ */
+function detectMarketRegime(marketData) {
+    const {
+        fearGreed = 50,
+        volatility = 'medium',
+        trend = 'neutral',
+        liquidationImbalance = 0,
+        priceChange24h = 0
+    } = marketData;
+    
+    // High liquidation imbalance = squeeze potential
+    if (Math.abs(liquidationImbalance) > 1.5) {
+        return 'SQUEEZE_POTENTIAL';
+    }
+    
+    // High volatility
+    if (volatility === 'high' || Math.abs(priceChange24h) > 5) {
+        return 'HIGH_VOLATILITY';
+    }
+    
+    // Trending markets
+    if (trend === 'bullish' && priceChange24h > 2) {
+        return 'TRENDING_BULL';
+    }
+    if (trend === 'bearish' && priceChange24h < -2) {
+        return 'TRENDING_BEAR';
+    }
+    
+    // Low volatility
+    if (volatility === 'low' && Math.abs(priceChange24h) < 1) {
+        return 'LOW_VOLATILITY';
+    }
+    
+    // Default to ranging
+    return 'RANGING';
+}
+
+/**
+ * Build agent team based on market regime
+ */
+function buildAgentTeam(regime, customAgents = null) {
+    const regimeConfig = MARKET_REGIMES[regime] || MARKET_REGIMES.RANGING;
+    
+    const agents = [];
+    
+    // Add primary agents
+    for (const agentKey of regimeConfig.primaryAgents) {
+        if (TRADING_AGENT_POOL[agentKey]) {
+            const agent = { ...TRADING_AGENT_POOL[agentKey] };
+            delete agent.skills; // Remove internal metadata
+            agents.push(agent);
+        }
+    }
+    
+    // Add support agents
+    for (const agentKey of regimeConfig.supportAgents) {
+        if (TRADING_AGENT_POOL[agentKey]) {
+            const agent = { ...TRADING_AGENT_POOL[agentKey] };
+            delete agent.skills;
+            agents.push(agent);
+        }
+    }
+    
+    // Override with custom agents if provided
+    if (customAgents && customAgents.length > 0) {
+        return customAgents;
+    }
+    
+    return agents;
+}
+
+/**
+ * Execute AgentRearrange swarm for trading analysis
+ * 
+ * @param {Object} config - Rearrange configuration
+ * @returns {Promise<Object>} Rearranged agent execution result
+ */
+async function executeAgentRearrange(config) {
+    const {
+        name = 'Adaptive Trading Analysis',
+        description = 'Dynamic agent role assignment based on market conditions',
+        task,
+        marketData = {},
+        forceRegime = null,
+        customAgents = null,
+        maxLoops = 1
+    } = config;
+    
+    // Detect market regime
+    const regime = forceRegime || detectMarketRegime(marketData);
+    const regimeInfo = MARKET_REGIMES[regime];
+    
+    log(`\n${'═'.repeat(60)}`);
+    log(`🔄 AGENT REARRANGE ENGINE`);
+    log(`${'═'.repeat(60)}`);
+    log(`📊 Detected Regime: ${regime}`);
+    log(`📝 Description: ${regimeInfo?.description || 'Custom'}`);
+    
+    // Build optimized agent team
+    const agents = buildAgentTeam(regime, customAgents);
+    
+    log(`\n🤖 ASSIGNED AGENTS (${agents.length}):`);
+    agents.forEach((agent, i) => {
+        log(`   ${i+1}. ${agent.agent_name} - ${agent.description}`);
+    });
+    
+    // Construct the rearrange task
+    const fullTask = `
+MARKET REGIME: ${regime}
+${regimeInfo?.description || ''}
+
+MARKET CONTEXT:
+${JSON.stringify(marketData, null, 2)}
+
+TASK:
+${task}
+
+INSTRUCTIONS:
+- Agents may be reassigned roles mid-task based on emerging information
+- ATLAS CEO coordinates and can delegate dynamically
+- Each agent should contribute based on their specialty
+- Final output should include: SIGNAL, CONFIDENCE, RISK_LEVEL, AGENT_CONTRIBUTIONS
+`;
+    
+    try {
+        // Build rearrange_flow from agent names
+        // Format: agent1 -> agent2 -> agent3
+        const agentNames = agents.map(a => a.agent_name);
+        const rearrangeFlow = agentNames.join(' -> ');
+        
+        const payload = {
+            name,
+            description: `${description} | Regime: ${regime}`,
+            swarm_type: 'AgentRearrange',
+            task: fullTask,
+            agents,
+            rearrange_flow: rearrangeFlow,
+            max_loops: maxLoops
+        };
+        
+        log(`\n🔗 Rearrange Flow: ${rearrangeFlow}`);
+        log(`🚀 Executing AgentRearrange swarm...`);
+        const startTime = Date.now();
+        
+        const result = await makeRequest('POST', '/v1/swarm/completions', payload);
+        
+        const executionTime = ((Date.now() - startTime) / 1000).toFixed(1);
+        log(`✅ Rearrange completed in ${executionTime}s`);
+        
+        // Parse and structure the result
+        const parsedResult = parseRearrangeOutput(result, regime);
+        
+        log(`\n📊 REARRANGE SUMMARY`);
+        log(`${'─'.repeat(40)}`);
+        log(`🎯 Signal: ${parsedResult.signal}`);
+        log(`💯 Confidence: ${parsedResult.confidence}%`);
+        log(`⚠️ Risk Level: ${parsedResult.riskLevel}/10`);
+        log(`🔄 Agents Used: ${parsedResult.agentsUsed}`);
+        
+        return {
+            success: true,
+            regime,
+            regimeDescription: regimeInfo?.description,
+            ...parsedResult,
+            rawOutput: result.output,
+            executionTime: parseFloat(executionTime),
+            usage: result.usage
+        };
+        
+    } catch (error) {
+        log(`❌ Rearrange Error: ${error.message}`);
+        return {
+            success: false,
+            error: error.message,
+            regime,
+            signal: 'NEUTRAL',
+            confidence: 0,
+            riskLevel: 10
+        };
+    }
+}
+
+/**
+ * Parse AgentRearrange output into structured format
+ */
+function parseRearrangeOutput(result, regime) {
+    const output = {
+        signal: 'NEUTRAL',
+        direction: 'HOLD',
+        confidence: 50,
+        riskLevel: 5,
+        entry: null,
+        stopLoss: null,
+        takeProfit: null,
+        positionSize: 2,
+        agentContributions: [],
+        agentsUsed: 0,
+        rearrangementNotes: ''
+    };
+    
+    if (!result.output || !Array.isArray(result.output)) {
+        return output;
+    }
+    
+    output.agentsUsed = result.output.length;
+    
+    // Collect all agent outputs
+    let combinedText = '';
+    for (const item of result.output) {
+        const role = item.role || 'Unknown';
+        const content = item.content || '';
+        
+        output.agentContributions.push({
+            agent: role,
+            summary: content.substring(0, 500)
+        });
+        
+        combinedText += content + '\n';
+    }
+    
+    // Parse signal from combined output
+    if (combinedText.includes('LONG') || combinedText.includes('BUY')) {
+        output.signal = 'LONG';
+        output.direction = 'LONG';
+    } else if (combinedText.includes('SHORT') || combinedText.includes('SELL')) {
+        output.signal = 'SHORT';
+        output.direction = 'SHORT';
+    } else if (combinedText.includes('WAIT') || combinedText.includes('HOLD')) {
+        output.signal = 'WAIT';
+        output.direction = 'HOLD';
+    }
+    
+    // Parse confidence
+    const confMatch = combinedText.match(/(?:confidence|CONFIDENCE)[:\s]*([0-9]+)/i) ||
+                      combinedText.match(/([0-9]+)\s*%\s*(?:confidence|confident)/i);
+    if (confMatch) {
+        output.confidence = Math.min(parseInt(confMatch[1]), 100);
+    }
+    
+    // Parse risk level
+    const riskMatch = combinedText.match(/(?:risk|RISK)\s*(?:level|score)?[:\s]*([0-9]+)/i) ||
+                      combinedText.match(/([0-9]+)\s*\/\s*10/i);
+    if (riskMatch) {
+        output.riskLevel = Math.min(parseInt(riskMatch[1]), 10);
+    }
+    
+    // Parse price levels
+    const entryMatch = combinedText.match(/(?:entry|Entry)[:\s]*\$?([0-9,]+(?:\.[0-9]+)?)/i);
+    const slMatch = combinedText.match(/(?:stop\s*loss|SL)[:\s]*\$?([0-9,]+(?:\.[0-9]+)?)/i);
+    const tpMatch = combinedText.match(/(?:take\s*profit|TP|target)[:\s]*\$?([0-9,]+(?:\.[0-9]+)?)/i);
+    
+    if (entryMatch) output.entry = parseFloat(entryMatch[1].replace(/,/g, ''));
+    if (slMatch) output.stopLoss = parseFloat(slMatch[1].replace(/,/g, ''));
+    if (tpMatch) output.takeProfit = parseFloat(tpMatch[1].replace(/,/g, ''));
+    
+    // Check for rearrangement notes
+    if (result.agent_rearrangement) {
+        output.rearrangementNotes = result.agent_rearrangement;
+    }
+    
+    return output;
+}
+
+/**
+ * ATLAS CEO command to rearrange agents for specific market condition
+ */
+async function atlasRearrangeCommand(command, marketData) {
+    log(`\n🎯 ATLAS REARRANGE COMMAND: ${command}`);
+    
+    // Map commands to regimes
+    const commandMap = {
+        'maximize_profits': 'TRENDING_BULL',
+        'defensive_mode': 'TRENDING_BEAR',
+        'scalp_range': 'RANGING',
+        'crisis_mode': 'HIGH_VOLATILITY',
+        'wait_breakout': 'LOW_VOLATILITY',
+        'hunt_squeeze': 'SQUEEZE_POTENTIAL'
+    };
+    
+    const regime = commandMap[command] || detectMarketRegime(marketData);
+    
+    return executeAgentRearrange({
+        name: `ATLAS ${command.toUpperCase()} Operation`,
+        task: `Execute ${command} strategy with optimal agent configuration`,
+        marketData,
+        forceRegime: regime
+    });
+}
+
+/**
+ * Quick trading analysis with auto-rearranged agents
+ */
+async function quickTradingAnalysis(symbol, marketData, analysisType = 'full') {
+    const task = `
+ANALYZE: ${symbol}
+TYPE: ${analysisType}
+
+Provide:
+1. SIGNAL: LONG / SHORT / WAIT
+2. CONFIDENCE: 0-100%
+3. RISK_LEVEL: 1-10
+4. ENTRY: Price level
+5. STOP_LOSS: Price level
+6. TAKE_PROFIT: Price level
+7. REASONING: Brief explanation
+`;
+    
+    return executeAgentRearrange({
+        name: `${symbol} Quick Analysis`,
+        task,
+        marketData
+    });
+}
+
+// Export functions
+module.exports = {
+    executeAgentRearrange,
+    atlasRearrangeCommand,
+    quickTradingAnalysis,
+    detectMarketRegime,
+    buildAgentTeam,
+    parseRearrangeOutput,
+    TRADING_AGENT_POOL,
+    MARKET_REGIMES
+};
+
+// Test if run directly
+if (require.main === module) {
+    (async () => {
+        console.log('\n' + '═'.repeat(60));
+        console.log('🔄 AGENT REARRANGE ENGINE TEST');
+        console.log('═'.repeat(60) + '\n');
+        
+        const result = await executeAgentRearrange({
+            name: 'BTC Adaptive Analysis',
+            task: 'Analyze BTC for potential trading opportunity. Consider all available data and provide a trading recommendation.',
+            marketData: {
+                symbol: 'BTC',
+                currentPrice: 69863,
+                fearGreed: 12,
+                volatility: 'high',
+                trend: 'neutral',
+                priceChange24h: -2.5,
+                liquidationImbalance: 1.8,
+                longLiqBelow: 80000000,
+                shortLiqAbove: 40000000
+            }
+        });
+        
+        console.log('\n' + '═'.repeat(60));
+        console.log('📋 FINAL RESULT');
+        console.log('═'.repeat(60));
+        console.log(JSON.stringify(result, null, 2));
+    })();
+}
