@@ -1,0 +1,518 @@
+/**
+ * Risk Debate Engine - DebateWithJudge Architecture
+ * Uses SwarmsAI DebateWithJudge for enhanced trading risk assessment
+ * 
+ * Architecture:
+ * - Pro Agent (Bull Case) - Argues for the trade
+ * - Con Agent (Bear Case) - Argues against the trade
+ * - Judge Agent (ATLAS CEO) - Final verdict with risk score
+ */
+
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+const BASE_URL = 'api.swarms.world';
+const LOG_FILE = '/home/ubuntu/intellitrade/logs/risk-debate.log';
+
+/**
+ * Logging utility
+ */
+function log(message) {
+    const timestamp = new Date().toISOString();
+    const logLine = `[${timestamp}] ${message}`;
+    console.log(logLine);
+    try {
+        fs.appendFileSync(LOG_FILE, logLine + '\n');
+    } catch (e) {}
+}
+
+/**
+ * Get SwarmsAI API key
+ */
+function getApiKey() {
+    if (process.env.SWARMS_API_KEY) {
+        return process.env.SWARMS_API_KEY;
+    }
+    
+    const secretsPath = path.join(process.env.HOME, '.config/abacusai_auth_secrets.json');
+    if (fs.existsSync(secretsPath)) {
+        const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+        if (secrets.swarmsai?.secrets?.api_key?.value) {
+            return secrets.swarmsai.secrets.api_key.value;
+        }
+    }
+    
+    const envPath = '/home/ubuntu/intellitrade/nextjs_space/.env';
+    if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        const match = envContent.match(/SWARMS_API_KEY=(.+)/);
+        if (match) return match[1].trim();
+    }
+    
+    throw new Error('SWARMS_API_KEY not found');
+}
+
+/**
+ * Make API request to Swarms.ai
+ */
+function makeRequest(method, endpoint, data = null) {
+    return new Promise((resolve, reject) => {
+        const apiKey = getApiKey();
+        
+        const options = {
+            hostname: BASE_URL,
+            port: 443,
+            path: endpoint,
+            method: method,
+            headers: {
+                'x-api-key': apiKey,
+                'Content-Type': 'application/json'
+            },
+            timeout: 120000
+        };
+        
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                try {
+                    const result = JSON.parse(body);
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve(result);
+                    } else {
+                        reject(new Error(`API Error ${res.statusCode}: ${JSON.stringify(result)}`));
+                    }
+                } catch (e) {
+                    reject(new Error(`Parse error: ${body}`));
+                }
+            });
+        });
+        
+        req.on('error', reject);
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
+        });
+        
+        if (data) {
+            req.write(JSON.stringify(data));
+        }
+        
+        req.end();
+    });
+}
+
+/**
+ * Trading Risk Debate Agents Configuration
+ */
+const TRADING_DEBATE_AGENTS = {
+    // Pro Agent - Bull Case
+    bullCase: {
+        agent_name: 'TITAN Bull Advocate',
+        description: 'Argues IN FAVOR of the trade with evidence-based reasoning',
+        system_prompt: `You are TITAN, Intellitrade's Bull Advocate specializing in crypto trading analysis.
+
+Your role is to argue IN FAVOR of the proposed trade direction.
+
+PRESENT YOUR BULL CASE:
+1. Technical indicators supporting the trade
+2. Market sentiment factors (Fear & Greed, liquidation data)
+3. Historical precedents for similar setups
+4. Potential catalysts and positive scenarios
+5. Risk/reward ratio justification
+
+Rules:
+- Use specific price levels and percentages
+- Reference liquidation heatmap data if provided
+- Quantify upside potential
+- Address potential counterarguments proactively
+- Be aggressive but evidence-based`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.5
+    },
+    
+    // Con Agent - Bear Case  
+    bearCase: {
+        agent_name: 'HYDRA Bear Advocate',
+        description: 'Argues AGAINST the trade with risk-focused reasoning',
+        system_prompt: `You are HYDRA, Intellitrade's Bear Advocate and Devil's Advocate specializing in risk identification.
+
+Your role is to argue AGAINST the proposed trade direction.
+
+PRESENT YOUR BEAR CASE:
+1. Technical resistance levels and failure points
+2. Negative market sentiment signals
+3. Liquidation cascade risks
+4. Macroeconomic headwinds
+5. Historical failure patterns in similar setups
+6. Hidden risks and black swan scenarios
+
+Rules:
+- Identify specific invalidation levels
+- Quantify downside risk with exact percentages
+- Challenge all bullish assumptions
+- Reference worst-case scenarios
+- Be skeptical and thorough`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.5
+    },
+    
+    // Judge Agent - ATLAS CEO
+    judge: {
+        agent_name: 'ATLAS CEO Judge',
+        description: 'Evaluates both sides and provides final trading verdict',
+        system_prompt: `You are ATLAS, CEO of Intellitrade's AI Trading Swarm and the IMPARTIAL JUDGE.
+
+You have heard arguments from:
+- TITAN (Bull Advocate): Pro-trade arguments
+- HYDRA (Bear Advocate): Anti-trade arguments
+
+Your task is to deliver the FINAL VERDICT.
+
+PROVIDE YOUR JUDGMENT:
+1. VERDICT: EXECUTE / WAIT / REJECT
+2. CONFIDENCE: 0-100%
+3. RISK SCORE: 1-10 (trades >7 are VETOED)
+4. DIRECTION: LONG / SHORT / NEUTRAL
+5. KEY LEVELS:
+   - Entry: $XX,XXX
+   - Stop Loss: $XX,XXX
+   - Take Profit: $XX,XXX
+6. POSITION SIZE: % of portfolio
+7. REASONING: 2-3 sentence synthesis
+
+Rules:
+- Be objective and balanced
+- Weight arguments by evidence quality
+- Risk management is paramount
+- If risk >7, you MUST veto regardless of potential
+- Provide actionable output for trading agents`,
+        model_name: 'gpt-4o',
+        max_loops: 1,
+        temperature: 0.3
+    }
+};
+
+/**
+ * Execute a trading risk debate using DebateWithJudge architecture
+ * 
+ * @param {Object} config - Debate configuration
+ * @param {string} config.symbol - Trading symbol (BTC, ETH)
+ * @param {string} config.proposedDirection - LONG or SHORT
+ * @param {number} config.currentPrice - Current price
+ * @param {Object} config.marketData - Market intelligence data
+ * @param {Object} config.liquidationData - Liquidation heatmap data
+ * @param {number} config.maxLoops - Number of refinement rounds (default: 1)
+ * @returns {Promise<Object>} Debate result with verdict
+ */
+async function executeRiskDebate(config) {
+    const {
+        symbol = 'BTC',
+        proposedDirection = 'LONG',
+        currentPrice,
+        marketData = {},
+        liquidationData = {},
+        technicalData = {},
+        maxLoops = 1
+    } = config;
+    
+    log(`\n${'═'.repeat(60)}`);
+    log(`⚖️ RISK DEBATE ENGINE - ${symbol} ${proposedDirection}`);
+    log(`${'═'.repeat(60)}`);
+    
+    // Construct the debate task
+    const debateTask = `
+TRADING PROPOSAL UNDER DEBATE:
+- Symbol: ${symbol}USDT
+- Proposed Direction: ${proposedDirection}
+- Current Price: $${currentPrice?.toLocaleString() || 'N/A'}
+
+MARKET CONTEXT:
+- Fear & Greed Index: ${marketData.fearGreed?.value || 'N/A'} (${marketData.fearGreed?.classification || 'N/A'})
+- MACD: ${technicalData.macd || 'N/A'}
+- SMA Structure: ${technicalData.smaStructure || 'N/A'}
+- Market Bias: ${marketData.bias || 'NEUTRAL'} @ ${marketData.confidence || 0}%
+
+LIQUIDATION HEATMAP:
+- Signal: ${liquidationData.signal || 'NEUTRAL'}
+- Confidence: ${liquidationData.confidence || 50}%
+- Reason: ${liquidationData.reason || 'No data'}
+- Long Liq Below: $${(liquidationData.longLiqBelow / 1e6)?.toFixed(1) || 0}M
+- Short Liq Above: $${(liquidationData.shortLiqAbove / 1e6)?.toFixed(1) || 0}M
+
+KEY LEVELS:
+- Resistance: $${technicalData.resistance || 'N/A'}
+- Support: $${technicalData.support || 'N/A'}
+
+DEBATE QUESTION:
+Should Intellitrade agents execute a ${proposedDirection} position on ${symbol} at $${currentPrice?.toLocaleString() || 'current price'}?
+
+Consider: Risk/reward ratio, liquidation risks, market regime, technical setup, and position sizing.
+`;
+
+    log(`📋 Debate Task Constructed`);
+    log(`📊 ${symbol} @ $${currentPrice} | Proposed: ${proposedDirection}`);
+    
+    try {
+        const payload = {
+            name: `${symbol} Risk Debate`,
+            description: `Structured risk assessment debate for ${symbol} ${proposedDirection} position`,
+            swarm_type: 'DebateWithJudge',
+            task: debateTask,
+            agents: [
+                TRADING_DEBATE_AGENTS.bullCase,
+                TRADING_DEBATE_AGENTS.bearCase,
+                TRADING_DEBATE_AGENTS.judge
+            ],
+            max_loops: maxLoops
+        };
+        
+        log(`🤖 Executing DebateWithJudge swarm...`);
+        const startTime = Date.now();
+        
+        const result = await makeRequest('POST', '/v1/swarm/completions', payload);
+        
+        const executionTime = ((Date.now() - startTime) / 1000).toFixed(1);
+        log(`✅ Debate completed in ${executionTime}s`);
+        
+        // Parse the debate output
+        const parsedResult = parseDebateOutput(result, symbol, proposedDirection);
+        
+        log(`\n📊 DEBATE SUMMARY`);
+        log(`─────────────────────────────────────`);
+        log(`🎯 Verdict: ${parsedResult.verdict}`);
+        log(`📈 Direction: ${parsedResult.direction}`);
+        log(`💯 Confidence: ${parsedResult.confidence}%`);
+        log(`⚠️ Risk Score: ${parsedResult.riskScore}/10`);
+        log(`🛡️ VaultKeeper: ${parsedResult.riskScore > 7 ? 'VETOED ❌' : 'APPROVED ✅'}`);
+        
+        if (parsedResult.entry) {
+            log(`\n📍 Trade Levels:`);
+            log(`   Entry: $${parsedResult.entry}`);
+            log(`   Stop Loss: $${parsedResult.stopLoss}`);
+            log(`   Take Profit: $${parsedResult.takeProfit}`);
+            log(`   Position Size: ${parsedResult.positionSize}%`);
+        }
+        
+        return {
+            success: true,
+            symbol,
+            proposedDirection,
+            currentPrice,
+            ...parsedResult,
+            rawOutput: result.output,
+            executionTime: parseFloat(executionTime),
+            usage: result.usage
+        };
+        
+    } catch (error) {
+        log(`❌ Debate Error: ${error.message}`);
+        return {
+            success: false,
+            error: error.message,
+            symbol,
+            proposedDirection,
+            verdict: 'WAIT',
+            riskScore: 10,
+            confidence: 0,
+            reason: 'Debate failed - defaulting to conservative stance'
+        };
+    }
+}
+
+/**
+ * Parse debate output to extract actionable trading signals
+ */
+function parseDebateOutput(result, symbol, proposedDirection) {
+    const output = {
+        verdict: 'WAIT',
+        direction: proposedDirection,
+        confidence: 50,
+        riskScore: 5,
+        entry: null,
+        stopLoss: null,
+        takeProfit: null,
+        positionSize: 2,
+        bullArguments: '',
+        bearArguments: '',
+        judgeReasoning: '',
+        vetoed: false
+    };
+    
+    if (!result.output || !Array.isArray(result.output)) {
+        return output;
+    }
+    
+    // Extract each agent's response
+    for (const item of result.output) {
+        const role = item.role?.toLowerCase() || '';
+        const content = item.content || '';
+        
+        if (role.includes('bull') || role.includes('pro') || role.includes('titan')) {
+            output.bullArguments = content;
+        } else if (role.includes('bear') || role.includes('con') || role.includes('hydra')) {
+            output.bearArguments = content;
+        } else if (role.includes('judge') || role.includes('atlas')) {
+            output.judgeReasoning = content;
+            
+            // Parse verdict
+            if (content.includes('EXECUTE') || content.includes('execute')) {
+                output.verdict = 'EXECUTE';
+            } else if (content.includes('REJECT') || content.includes('reject')) {
+                output.verdict = 'REJECT';
+            } else {
+                output.verdict = 'WAIT';
+            }
+            
+            // Parse direction
+            if (content.includes('LONG')) output.direction = 'LONG';
+            else if (content.includes('SHORT')) output.direction = 'SHORT';
+            else if (content.includes('NEUTRAL')) output.direction = 'NEUTRAL';
+            
+            // Parse confidence (look for patterns like "85%" or "Confidence: 85")
+            const confMatch = content.match(/(?:confidence|CONFIDENCE)[:\s]*([0-9]+)/i) ||
+                              content.match(/([0-9]+)\s*%\s*(?:confidence|confident)/i);
+            if (confMatch) {
+                output.confidence = parseInt(confMatch[1]);
+            }
+            
+            // Parse risk score (look for patterns like "7/10" or "Risk: 7")
+            const riskMatch = content.match(/(?:risk|RISK)\s*(?:score|SCORE)?[:\s]*([0-9]+)/i) ||
+                              content.match(/([0-9]+)\s*\/\s*10/i);
+            if (riskMatch) {
+                output.riskScore = parseInt(riskMatch[1]);
+            }
+            
+            // Parse price levels
+            const entryMatch = content.match(/(?:entry|Entry)[:\s]*\$?([0-9,]+(?:\.[0-9]+)?)/i);
+            const slMatch = content.match(/(?:stop\s*loss|SL)[:\s]*\$?([0-9,]+(?:\.[0-9]+)?)/i);
+            const tpMatch = content.match(/(?:take\s*profit|TP)[:\s]*\$?([0-9,]+(?:\.[0-9]+)?)/i);
+            const sizeMatch = content.match(/(?:position\s*size|size)[:\s]*([0-9]+(?:\.[0-9]+)?)\s*%/i);
+            
+            if (entryMatch) output.entry = parseFloat(entryMatch[1].replace(/,/g, ''));
+            if (slMatch) output.stopLoss = parseFloat(slMatch[1].replace(/,/g, ''));
+            if (tpMatch) output.takeProfit = parseFloat(tpMatch[1].replace(/,/g, ''));
+            if (sizeMatch) output.positionSize = parseFloat(sizeMatch[1]);
+        }
+    }
+    
+    // Apply VaultKeeper veto rule
+    if (output.riskScore > 7) {
+        output.vetoed = true;
+        output.verdict = 'REJECT';
+    }
+    
+    return output;
+}
+
+/**
+ * Execute multi-asset risk debate (BTC + ETH simultaneously)
+ */
+async function executeMultiAssetDebate(assets) {
+    log(`\n${'═'.repeat(60)}`);
+    log(`⚖️ MULTI-ASSET RISK DEBATE`);
+    log(`${'═'.repeat(60)}`);
+    
+    const results = {};
+    
+    for (const asset of assets) {
+        results[asset.symbol] = await executeRiskDebate(asset);
+        // Small delay between debates to avoid rate limiting
+        await new Promise(r => setTimeout(r, 1000));
+    }
+    
+    return results;
+}
+
+/**
+ * Quick risk assessment without full debate (for time-critical decisions)
+ */
+async function quickRiskAssessment(config) {
+    const { symbol, direction, currentPrice, riskFactors = {} } = config;
+    
+    const task = `Quick risk assessment for ${symbol} ${direction} at $${currentPrice}.
+Factors: ${JSON.stringify(riskFactors)}
+Provide: RISK_SCORE (1-10), PROCEED (yes/no), ONE_LINE_REASON.`;
+    
+    try {
+        const result = await makeRequest('POST', '/v1/agent/completions', {
+            agent_config: {
+                agent_name: 'VaultKeeper',
+                system_prompt: 'You are VaultKeeper, Intellitrade risk manager. Provide quick risk scores (1-10). Be conservative.',
+                model_name: 'gpt-4o-mini',
+                max_loops: 1
+            },
+            task,
+            max_tokens: 200
+        });
+        
+        const content = result.output || result.response || '';
+        const scoreMatch = content.match(/([0-9]+)/); 
+        const score = scoreMatch ? parseInt(scoreMatch[1]) : 5;
+        const proceed = !content.toLowerCase().includes('no') && score <= 7;
+        
+        return {
+            success: true,
+            riskScore: Math.min(score, 10),
+            proceed,
+            reason: content.substring(0, 200)
+        };
+    } catch (error) {
+        return {
+            success: false,
+            riskScore: 10,
+            proceed: false,
+            reason: error.message
+        };
+    }
+}
+
+// Export functions
+module.exports = {
+    executeRiskDebate,
+    executeMultiAssetDebate,
+    quickRiskAssessment,
+    parseDebateOutput,
+    TRADING_DEBATE_AGENTS
+};
+
+// Test if run directly
+if (require.main === module) {
+    (async () => {
+        console.log('\n' + '═'.repeat(60));
+        console.log('⚖️ RISK DEBATE ENGINE TEST');
+        console.log('═'.repeat(60) + '\n');
+        
+        const result = await executeRiskDebate({
+            symbol: 'BTC',
+            proposedDirection: 'LONG',
+            currentPrice: 69863,
+            marketData: {
+                fearGreed: { value: 12, classification: 'EXTREME FEAR' },
+                bias: 'neutral',
+                confidence: 50
+            },
+            liquidationData: {
+                signal: 'NEUTRAL',
+                confidence: 50,
+                reason: 'Balanced liquidation levels',
+                longLiqBelow: 80000000,
+                shortLiqAbove: 40000000
+            },
+            technicalData: {
+                macd: 'BULLISH (+812)',
+                smaStructure: '20 < 50 < 200 (bearish)',
+                resistance: 70000,
+                support: 65000
+            }
+        });
+        
+        console.log('\n' + '═'.repeat(60));
+        console.log('📋 FINAL RESULT');
+        console.log('═'.repeat(60));
+        console.log(JSON.stringify(result, null, 2));
+    })();
+}
